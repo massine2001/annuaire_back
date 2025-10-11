@@ -12,5 +12,5 @@ public interface PoolRepository extends JpaRepository<Pool, Integer> {
     @Nonnull
     List<Pool> findAll();
     Pool findById(int id);
-
+    List<Pool> findByCreatedBy(Integer createdBy);
 }

@@ -6,7 +6,7 @@ import org.hibernate.annotations.ColumnDefault;
 import java.time.Instant;
 
 @Entity
-@Table(name = "Pool", schema = "logiuqkd_annuaire_db")
+@Table(name = "Pool")
 public class Pool {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,11 +20,11 @@ public class Pool {
     @Column(name = "description")
     private String description;
 
-    @Column(name = "created_by", nullable = false)
+    @Column(name = "created_by")
     private Integer createdBy;
 
     @ColumnDefault("current_timestamp()")
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at")
     private Instant createdAt;
 
     public Integer getId() {

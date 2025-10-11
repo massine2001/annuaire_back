@@ -16,6 +16,9 @@ public class UserService {
         return userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User with id : "+id+" not found"));
     }
+    public long getUsersCount() {
+        return userRepository.count();
+    }
     public User findByLastName(String lastName){
         return userRepository.findByLastName(lastName)
                 .orElseThrow(() -> new RuntimeException("User with lastname : "+lastName+" not found"));

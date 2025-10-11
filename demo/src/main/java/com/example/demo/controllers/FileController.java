@@ -1,5 +1,6 @@
 package com.example.demo.controllers;
 
+import com.example.demo.config.SftpConfig;
 import com.example.demo.models.File;
 import com.example.demo.models.Pool;
 import com.example.demo.models.User;
@@ -9,14 +10,13 @@ import com.example.demo.services.UserService;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
-import java.util.Objects;
 
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
@@ -30,10 +30,13 @@ public class FileController {
     private final FileService fileService;
     private final PoolService poolService;
     private final UserService userService;
-    public FileController(FileService fileService, PoolService poolService, UserService userService) {
+    private final SftpConfig sftpConfig;
+
+    public FileController(FileService fileService, PoolService poolService, UserService userService, SftpConfig sftpConfig) {
         this.fileService = fileService;
         this.poolService = poolService;
         this.userService = userService;
+        this.sftpConfig = sftpConfig;
     }
 
     @GetMapping("/")
@@ -44,6 +47,13 @@ public class FileController {
         }
         return ResponseEntity.ok(files);
     }
+
+    @GetMapping("/count")
+    public ResponseEntity<Long> getFilesCount() {
+        long count = fileService.getFilesCount();
+        return ResponseEntity.ok(count);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<File> getById(@PathVariable int id){
         File file = fileService.getFileById(id);
@@ -52,6 +62,7 @@ public class FileController {
         }
         return ResponseEntity.ok(file);
     }
+
     @GetMapping("/path/{id}")
     public ResponseEntity<String> getPath(@PathVariable int id){
         String path = fileService.findPath(id);
@@ -60,6 +71,7 @@ public class FileController {
         }
         return ResponseEntity.ok(path);
     }
+
     @GetMapping("/uploader/{id}")
     public ResponseEntity<User> getUploader(@PathVariable int id){
         User user = fileService.findUploader(id);
@@ -68,6 +80,7 @@ public class FileController {
         }
         return ResponseEntity.ok(user);
     }
+
     @GetMapping("/pool/{id}")
     public ResponseEntity<Pool> getPool(@PathVariable int id){
         Pool pool = fileService.findPoolById(id);
@@ -76,16 +89,19 @@ public class FileController {
         }
         return ResponseEntity.ok(pool);
     }
+
     @PostMapping("/")
     public ResponseEntity<File> createFile(@RequestBody File file){
         File createdFile = fileService.saveFile(file);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdFile);
     }
+
     @PutMapping("/{id}")
     public ResponseEntity<File> updateFile(@PathVariable int id, @RequestBody File file){
         File fileUpdated = fileService.updateFile(id, file);
         return ResponseEntity.ok(fileUpdated);
     }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<File> deleteFile(@PathVariable int id){
         if(fileService.getFileById(id) == null){
@@ -95,65 +111,54 @@ public class FileController {
         return ResponseEntity.noContent().build();
     }
 
-
-
     @PostMapping("/upload")
     public ResponseEntity<String> uploadFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam("poolId") int poolId,
             @RequestParam("userId") int userId) {
 
-
         try {
-            // Vérifiez si le pool et l'utilisateur existent
             Pool pool = poolService.getPoolById(poolId);
             User user = userService.findById(userId);
             if (pool == null || user == null) {
                 return ResponseEntity.badRequest().body("Invalid Pool or User ID");
             }
 
-            // Initialiser JSch et établir une connexion SFTP
             JSch jsch = new JSch();
-            jsch.addIdentity("C:/Users/aghar/.ssh/id_rsa");
-            Session session = jsch.getSession("logiuqkd", "world-365.fr.planethoster.net", 5022);
-
+            jsch.addIdentity(sftpConfig.getPrivateKeyPath());
+            Session session = jsch.getSession(
+                    sftpConfig.getUsername(),
+                    sftpConfig.getHost(),
+                    sftpConfig.getPort()
+            );
             session.setConfig("StrictHostKeyChecking", "no");
             session.connect();
-
 
             ChannelSftp channelSftp = (ChannelSftp) session.openChannel("sftp");
             channelSftp.connect();
 
-            String remoteDir = "/home/logiuqkd/annuaire/pool" + poolId + "/user" + userId;
+            String remoteDir = sftpConfig.getBaseDirectory() + "/pool" + poolId + "/user" + userId;
 
             String[] folders = remoteDir.split("/");
             String path = "";
-            try {
-                for (String folder : folders) {
-                    if (folder.isEmpty()) continue; // Sauter les parties vides
-                    path += "/" + folder;
-                    try {
-                        channelSftp.cd(path); // Essayer d'accéder au dossier
-                    } catch (Exception e) {
-                        channelSftp.mkdir(path); // Si non existant, le créer
-                        channelSftp.cd(path);   // Se déplacer dans le nouveau dossier
-                    }
+            for (String folder : folders) {
+                if (folder.isEmpty()) continue;
+                path += "/" + folder;
+                try {
+                    channelSftp.cd(path);
+                } catch (Exception e) {
+                    channelSftp.mkdir(path);
+                    channelSftp.cd(path);
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
             }
 
-
-            // Sauvegarder le fichier
             InputStream inputStream = file.getInputStream();
             channelSftp.put(inputStream, file.getOriginalFilename());
 
-            // Fermer les connexions
             inputStream.close();
             channelSftp.disconnect();
             session.disconnect();
 
-            // Enregistrer les informations dans la BDD
             File savedFile = new File();
             savedFile.setName(file.getOriginalFilename());
             savedFile.setPath(remoteDir + "/" + file.getOriginalFilename());
@@ -169,4 +174,118 @@ public class FileController {
         }
     }
 
+    @GetMapping("/download/{fileId}")
+    public ResponseEntity<Resource> downloadFile(@PathVariable int fileId) {
+        File file = fileService.findById(fileId);
+        if (file == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        try {
+            JSch jsch = new JSch();
+            jsch.addIdentity(sftpConfig.getPrivateKeyPath());
+            Session session = jsch.getSession(
+                    sftpConfig.getUsername(),
+                    sftpConfig.getHost(),
+                    sftpConfig.getPort()
+            );
+            session.setConfig("StrictHostKeyChecking", "no");
+            session.connect();
+
+            ChannelSftp channelSftp = (ChannelSftp) session.openChannel("sftp");
+            channelSftp.connect();
+
+            InputStream inputStream = channelSftp.get(file.getPath());
+            byte[] fileBytes = inputStream.readAllBytes();
+
+            inputStream.close();
+            channelSftp.disconnect();
+            session.disconnect();
+
+            Resource resource = new org.springframework.core.io.ByteArrayResource(fileBytes);
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType("application/octet-stream"))
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + file.getName() + "\"")
+                    .body(resource);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/preview/{id}")
+    public ResponseEntity<Resource> previewFile(@PathVariable Long id) {
+        try {
+            File file = fileService.getFileById(id.intValue());
+
+            if (file == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            JSch jsch = new JSch();
+            jsch.addIdentity(sftpConfig.getPrivateKeyPath());
+            Session session = jsch.getSession(
+                    sftpConfig.getUsername(),
+                    sftpConfig.getHost(),
+                    sftpConfig.getPort()
+            );
+            session.setConfig("StrictHostKeyChecking", "no");
+            session.connect();
+
+            ChannelSftp channelSftp = (ChannelSftp) session.openChannel("sftp");
+            channelSftp.connect();
+
+            InputStream inputStream = channelSftp.get(file.getPath());
+            byte[] fileBytes = inputStream.readAllBytes();
+
+            inputStream.close();
+            channelSftp.disconnect();
+            session.disconnect();
+
+            Resource resource = new org.springframework.core.io.ByteArrayResource(fileBytes);
+
+            String fileName = file.getName().toLowerCase();
+            String contentType;
+
+            if (fileName.endsWith(".pdf")) {
+                contentType = "application/pdf";
+            } else if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) {
+                contentType = "image/jpeg";
+            } else if (fileName.endsWith(".png")) {
+                contentType = "image/png";
+            } else if (fileName.endsWith(".gif")) {
+                contentType = "image/gif";
+            } else if (fileName.endsWith(".svg")) {
+                contentType = "image/svg+xml";
+            } else if (fileName.endsWith(".mp4")) {
+                contentType = "video/mp4";
+            } else if (fileName.endsWith(".webm")) {
+                contentType = "video/webm";
+            } else if (fileName.endsWith(".mp3")) {
+                contentType = "audio/mpeg";
+            } else if (fileName.endsWith(".wav")) {
+                contentType = "audio/wav";
+            } else if (fileName.endsWith(".txt")) {
+                contentType = "text/plain";
+            } else if (fileName.endsWith(".json")) {
+                contentType = "application/json";
+            } else {
+                contentType = "application/octet-stream";
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.getName() + "\"")
+                    .header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, "Content-Type, Content-Disposition")
+                    .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate")
+                    .body(resource);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }

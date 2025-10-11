@@ -53,5 +53,8 @@ public class AccessService {
     public void deleteAccess(int access_id){
         accessRepository.deleteById(access_id);
     }
+    public List<Access> getAccessesByPool(int poolId) {
+        return accessRepository.findByPoolId(poolId);
+    }
 
 }

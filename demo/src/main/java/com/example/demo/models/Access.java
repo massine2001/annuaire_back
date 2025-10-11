@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.ColumnDefault;
 
 @Entity
-@Table(name = "Access", schema = "logiuqkd_annuaire_db")
+@Table(name = "Access")
 public class Access {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

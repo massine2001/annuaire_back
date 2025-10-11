@@ -22,5 +22,6 @@ public interface FileRepository extends JpaRepository<File, Integer> {
     String findPath(@Param("id")int id);
     @Query("SELECT u FROM User u JOIN File f ON u.id = f.userUploader.id WHERE f.id = :id")
     User findUploader(int id);
+    List<File> findByPoolId(int poolId);
 
 }

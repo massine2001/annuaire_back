@@ -17,6 +17,10 @@ public class PoolService {
         return poolRepository.findAll();
     }
 
+    public long getPoolsCount() {
+        return poolRepository.count();
+    }
+
     public Pool getPoolById(int id) {
         return poolRepository.findById(id);
     }
@@ -31,5 +35,8 @@ public class PoolService {
         modifiedPool.setName(pool.getName());
         modifiedPool.setDescription(pool.getDescription());
         return poolRepository.save(modifiedPool);
+    }
+    public List<Pool> getAllPoolsByUserId(int userId) {
+        return poolRepository.findByCreatedBy(userId);
     }
 }

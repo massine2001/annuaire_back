@@ -6,7 +6,7 @@ import org.hibernate.annotations.ColumnDefault;
 import java.time.Instant;
 
 @Entity
-@Table(name = "File", schema = "logiuqkd_annuaire_db")
+@Table(name = "File")
 public class File {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

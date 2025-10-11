@@ -20,6 +20,7 @@ public class UserController {
         this.userService = userService ;
         this.accessService = accessService;
     }
+    @CrossOrigin(origins = "http://localhost:5173")
     @GetMapping("/")
     public ResponseEntity<List<User>> getAllUsers() {
         List<User> user = userService.getAllUser();
@@ -28,6 +29,13 @@ public class UserController {
         }
         return ResponseEntity.ok(user);
     }
+
+    @GetMapping("/count")
+    public ResponseEntity<Long> getUsersCount() {
+        long count = userService.getUsersCount();
+        return ResponseEntity.ok(count);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable int id) {
         User user = userService.findById(id);
