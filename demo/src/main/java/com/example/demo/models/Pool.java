@@ -1,5 +1,6 @@
 package com.example.demo.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import org.hibernate.annotations.ColumnDefault;
 
@@ -7,6 +8,7 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "Pool")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Pool {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

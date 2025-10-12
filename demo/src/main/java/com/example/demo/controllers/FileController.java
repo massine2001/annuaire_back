@@ -8,24 +8,17 @@ import com.example.demo.services.FileService;
 import com.example.demo.services.PoolService;
 import com.example.demo.services.UserService;
 import org.springframework.core.io.Resource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
-import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.Session;
-
-import java.io.InputStream;
-
 @RestController
-@RequestMapping("/api/file/")
+@RequestMapping("/api/files")
 public class FileController {
     private final FileService fileService;
     private final PoolService poolService;
@@ -39,252 +32,188 @@ public class FileController {
         this.sftpConfig = sftpConfig;
     }
 
-    @GetMapping("/")
-    public ResponseEntity<List<File>> getAll(){
+    @GetMapping
+    public ResponseEntity<List<File>> getAll() {
         List<File> files = fileService.getAllFiles();
-        if(files.isEmpty()){
-            return ResponseEntity.noContent().build();
-        }
         return ResponseEntity.ok(files);
     }
 
     @GetMapping("/count")
     public ResponseEntity<Long> getFilesCount() {
-        long count = fileService.getFilesCount();
-        return ResponseEntity.ok(count);
+        return ResponseEntity.ok(fileService.getFilesCount());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<File> getById(@PathVariable int id){
+    public ResponseEntity<File> getById(@PathVariable int id) {
         File file = fileService.getFileById(id);
-        if(file == null){
-            return ResponseEntity.notFound().build();
-        }
+        if (file == null) return ResponseEntity.notFound().build();
         return ResponseEntity.ok(file);
     }
 
-    @GetMapping("/path/{id}")
-    public ResponseEntity<String> getPath(@PathVariable int id){
-        String path = fileService.findPath(id);
-        if(path == null){
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(path);
-    }
-
     @GetMapping("/uploader/{id}")
-    public ResponseEntity<User> getUploader(@PathVariable int id){
+    public ResponseEntity<User> getUploader(@PathVariable int id) {
         User user = fileService.findUploader(id);
-        if(user == null){
-            return ResponseEntity.notFound().build();
-        }
+        if (user == null) return ResponseEntity.notFound().build();
         return ResponseEntity.ok(user);
     }
 
     @GetMapping("/pool/{id}")
-    public ResponseEntity<Pool> getPool(@PathVariable int id){
+    public ResponseEntity<Pool> getPool(@PathVariable int id) {
         Pool pool = fileService.findPoolById(id);
-        if(pool == null){
-            return ResponseEntity.notFound().build();
-        }
+        if (pool == null) return ResponseEntity.notFound().build();
         return ResponseEntity.ok(pool);
     }
 
-    @PostMapping("/")
-    public ResponseEntity<File> createFile(@RequestBody File file){
-        File createdFile = fileService.saveFile(file);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdFile);
-    }
-
     @PutMapping("/{id}")
-    public ResponseEntity<File> updateFile(@PathVariable int id, @RequestBody File file){
-        File fileUpdated = fileService.updateFile(id, file);
-        return ResponseEntity.ok(fileUpdated);
+    public ResponseEntity<File> updateFile(
+            @PathVariable int id,
+            @RequestParam(value = "file", required = false) MultipartFile newContent,
+            @RequestParam(value = "name", required = false) String name,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam(value = "expirationDate", required = false) String expirationDateStr) {
+
+        File existingFile = fileService.getFileById(id);
+        if (existingFile == null) return ResponseEntity.notFound().build();
+
+        try {
+            if (newContent != null && !newContent.isEmpty()) {
+                String oldPath = existingFile.getPath();
+                int lastSlash = oldPath.lastIndexOf('/');
+                String remoteDir = (lastSlash > 0) ? oldPath.substring(0, lastSlash) : sftpConfig.normalizedBaseDir();
+
+                String safeName = fileService.sanitizeFilename(newContent.getOriginalFilename());
+                fileService.deleteRemote(oldPath);
+                fileService.uploadToDir(remoteDir, safeName, newContent.getInputStream());
+                existingFile.setName(safeName);
+                existingFile.setPath(remoteDir + "/" + safeName);
+            } else if (name != null && !name.isBlank()) {
+                existingFile.setName(name);
+            }
+
+            if (description != null) {
+                existingFile.setDescription(description);
+            }
+
+            if (expirationDateStr != null && !expirationDateStr.isBlank()) {
+                try {
+                    existingFile.setExpirationDate(LocalDate.parse(expirationDateStr));
+                } catch (DateTimeParseException e) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+                }
+            }
+
+            File updated = fileService.updateFileEntity(id, existingFile);
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<File> deleteFile(@PathVariable int id){
-        if(fileService.getFileById(id) == null){
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<Void> deleteFile(@PathVariable int id) {
+        File f = fileService.getFileById(id);
+        if (f == null) return ResponseEntity.notFound().build();
+
+        try {
+            fileService.deleteRemote(f.getPath());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).build();
         }
-        fileService.deleteFile(id);
+        fileService.deleteFileById(id);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<String> uploadFile(
+    public ResponseEntity<File> uploadFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam("poolId") int poolId,
-            @RequestParam("userId") int userId) {
+            @RequestParam("userId") int userId,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam(value = "expirationDate", required = false) String expirationDateStr) {
 
         try {
             Pool pool = poolService.getPoolById(poolId);
             User user = userService.findById(userId);
-            if (pool == null || user == null) {
-                return ResponseEntity.badRequest().body("Invalid Pool or User ID");
-            }
+            if (pool == null || user == null) return ResponseEntity.badRequest().build();
 
-            JSch jsch = new JSch();
-            jsch.addIdentity(sftpConfig.getPrivateKeyPath());
-            Session session = jsch.getSession(
-                    sftpConfig.getUsername(),
-                    sftpConfig.getHost(),
-                    sftpConfig.getPort()
-            );
-            session.setConfig("StrictHostKeyChecking", "no");
-            session.connect();
-
-            ChannelSftp channelSftp = (ChannelSftp) session.openChannel("sftp");
-            channelSftp.connect();
-
-            String remoteDir = sftpConfig.getBaseDirectory() + "/pool" + poolId + "/user" + userId;
-
-            String[] folders = remoteDir.split("/");
-            String path = "";
-            for (String folder : folders) {
-                if (folder.isEmpty()) continue;
-                path += "/" + folder;
-                try {
-                    channelSftp.cd(path);
-                } catch (Exception e) {
-                    channelSftp.mkdir(path);
-                    channelSftp.cd(path);
-                }
-            }
-
-            InputStream inputStream = file.getInputStream();
-            channelSftp.put(inputStream, file.getOriginalFilename());
-
-            inputStream.close();
-            channelSftp.disconnect();
-            session.disconnect();
+            String remoteDir = fileService.buildRemoteDirFor(poolId, userId);
+            String safeName = fileService.sanitizeFilename(file.getOriginalFilename());
+            fileService.uploadToDir(remoteDir, safeName, file.getInputStream());
 
             File savedFile = new File();
-            savedFile.setName(file.getOriginalFilename());
-            savedFile.setPath(remoteDir + "/" + file.getOriginalFilename());
+            savedFile.setName(safeName);
+            savedFile.setPath(remoteDir + "/" + safeName);
             savedFile.setPool(pool);
             savedFile.setUserUploader(user);
             savedFile.setCreatedAt(Instant.now());
-            fileService.saveFile(savedFile);
+            savedFile.setDescription(description);
+            if (expirationDateStr != null && !expirationDateStr.isBlank()) {
+                try {
+                    savedFile.setExpirationDate(LocalDate.parse(expirationDateStr));
+                } catch (DateTimeParseException e) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+                }
+            }
 
-            return ResponseEntity.ok("File uploaded successfully to: " + remoteDir);
+            File persisted = fileService.saveFile(savedFile);
+            return ResponseEntity.status(HttpStatus.CREATED).body(persisted);
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File upload failed");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
     @GetMapping("/download/{fileId}")
     public ResponseEntity<Resource> downloadFile(@PathVariable int fileId) {
-        File file = fileService.findById(fileId);
-        if (file == null) {
-            return ResponseEntity.notFound().build();
-        }
+        File file = fileService.getFileById(fileId);
+        if (file == null) return ResponseEntity.notFound().build();
 
         try {
-            JSch jsch = new JSch();
-            jsch.addIdentity(sftpConfig.getPrivateKeyPath());
-            Session session = jsch.getSession(
-                    sftpConfig.getUsername(),
-                    sftpConfig.getHost(),
-                    sftpConfig.getPort()
-            );
-            session.setConfig("StrictHostKeyChecking", "no");
-            session.connect();
-
-            ChannelSftp channelSftp = (ChannelSftp) session.openChannel("sftp");
-            channelSftp.connect();
-
-            InputStream inputStream = channelSftp.get(file.getPath());
-            byte[] fileBytes = inputStream.readAllBytes();
-
-            inputStream.close();
-            channelSftp.disconnect();
-            session.disconnect();
-
-            Resource resource = new org.springframework.core.io.ByteArrayResource(fileBytes);
-
+            FileService.RemoteStream rs = fileService.getRemoteStream(file.getPath());
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentDisposition(ContentDisposition.attachment().filename(file.getName()).build());
+            if (rs.length() >= 0) headers.setContentLength(rs.length());
             return ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType("application/octet-stream"))
-                    .header(HttpHeaders.CONTENT_DISPOSITION,
-                            "attachment; filename=\"" + file.getName() + "\"")
-                    .body(resource);
-
+                    .headers(headers)
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(rs);
         } catch (Exception e) {
-            e.printStackTrace();
             return ResponseEntity.internalServerError().build();
         }
     }
 
     @GetMapping("/preview/{id}")
-    public ResponseEntity<Resource> previewFile(@PathVariable Long id) {
+    public ResponseEntity<Resource> previewFile(@PathVariable int id) {
+        File file = fileService.getFileById(id);
+        if (file == null) return ResponseEntity.notFound().build();
+
         try {
-            File file = fileService.getFileById(id.intValue());
-
-            if (file == null) {
-                return ResponseEntity.notFound().build();
-            }
-
-            JSch jsch = new JSch();
-            jsch.addIdentity(sftpConfig.getPrivateKeyPath());
-            Session session = jsch.getSession(
-                    sftpConfig.getUsername(),
-                    sftpConfig.getHost(),
-                    sftpConfig.getPort()
-            );
-            session.setConfig("StrictHostKeyChecking", "no");
-            session.connect();
-
-            ChannelSftp channelSftp = (ChannelSftp) session.openChannel("sftp");
-            channelSftp.connect();
-
-            InputStream inputStream = channelSftp.get(file.getPath());
-            byte[] fileBytes = inputStream.readAllBytes();
-
-            inputStream.close();
-            channelSftp.disconnect();
-            session.disconnect();
-
-            Resource resource = new org.springframework.core.io.ByteArrayResource(fileBytes);
-
+            FileService.RemoteStream rs = fileService.getRemoteStream(file.getPath());
             String fileName = file.getName().toLowerCase();
-            String contentType;
+            MediaType contentType;
+            if (fileName.endsWith(".pdf")) contentType = MediaType.APPLICATION_PDF;
+            else if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) contentType = MediaType.IMAGE_JPEG;
+            else if (fileName.endsWith(".png")) contentType = MediaType.IMAGE_PNG;
+            else if (fileName.endsWith(".gif")) contentType = MediaType.IMAGE_GIF;
+            else if (fileName.endsWith(".svg")) contentType = MediaType.valueOf("image/svg+xml");
+            else if (fileName.endsWith(".mp4")) contentType = MediaType.valueOf("video/mp4");
+            else if (fileName.endsWith(".webm")) contentType = MediaType.valueOf("video/webm");
+            else if (fileName.endsWith(".mp3")) contentType = MediaType.valueOf("audio/mpeg");
+            else if (fileName.endsWith(".wav")) contentType = MediaType.valueOf("audio/wav");
+            else if (fileName.endsWith(".txt")) contentType = MediaType.TEXT_PLAIN;
+            else if (fileName.endsWith(".json")) contentType = MediaType.APPLICATION_JSON;
+            else contentType = MediaType.APPLICATION_OCTET_STREAM;
 
-            if (fileName.endsWith(".pdf")) {
-                contentType = "application/pdf";
-            } else if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) {
-                contentType = "image/jpeg";
-            } else if (fileName.endsWith(".png")) {
-                contentType = "image/png";
-            } else if (fileName.endsWith(".gif")) {
-                contentType = "image/gif";
-            } else if (fileName.endsWith(".svg")) {
-                contentType = "image/svg+xml";
-            } else if (fileName.endsWith(".mp4")) {
-                contentType = "video/mp4";
-            } else if (fileName.endsWith(".webm")) {
-                contentType = "video/webm";
-            } else if (fileName.endsWith(".mp3")) {
-                contentType = "audio/mpeg";
-            } else if (fileName.endsWith(".wav")) {
-                contentType = "audio/wav";
-            } else if (fileName.endsWith(".txt")) {
-                contentType = "text/plain";
-            } else if (fileName.endsWith(".json")) {
-                contentType = "application/json";
-            } else {
-                contentType = "application/octet-stream";
-            }
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentDisposition(ContentDisposition.inline().filename(file.getName()).build());
+            headers.add(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, "Content-Type, Content-Disposition");
+            headers.add(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate");
+            if (rs.length() >= 0) headers.setContentLength(rs.length());
 
             return ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType(contentType))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.getName() + "\"")
-                    .header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, "Content-Type, Content-Disposition")
-                    .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate")
-                    .body(resource);
-
+                    .headers(headers)
+                    .contentType(contentType)
+                    .body(rs);
         } catch (Exception e) {
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

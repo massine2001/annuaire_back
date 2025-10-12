@@ -135,12 +135,8 @@ public class PoolController {
         stats.put("filesCount", files.size());
         stats.put("files", files);
 
-        // Taille totale (à calculer si tu stockes la taille dans File)
-        // long totalSize = files.stream().mapToLong(File::getSize).sum();
-        // stats.put("totalSize", totalSize);
 
         // Top uploaders
-// Top uploaders
         Map<User, Long> uploaderStats = files.stream()
                 .filter(file -> file.getUserUploader() != null)
                 .collect(Collectors.groupingBy(File::getUserUploader, Collectors.counting()));
@@ -149,7 +145,7 @@ public class PoolController {
                 .limit(5)
                 .collect(Collectors.toList());
         stats.put("topUploaders", topUploaders);
-  // Fichiers par jour (7 derniers jours)
+        // Fichiers par jour (7 derniers jours)
         Map<String, Long> filesPerDay = files.stream()
                 .collect(Collectors.groupingBy(
                         file -> file.getCreatedAt().toString().substring(0, 10),
