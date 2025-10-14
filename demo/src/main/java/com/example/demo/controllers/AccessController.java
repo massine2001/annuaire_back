@@ -3,6 +3,7 @@ package com.example.demo.controllers;
 import com.example.demo.models.Access;
 import com.example.demo.models.User;
 import com.example.demo.services.AccessService;
+import com.example.demo.services.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -16,9 +17,21 @@ import java.util.Optional;
 @RequestMapping("/api/access/")
 public class AccessController {
     private final AccessService accessService;
+    private final UserService userService;
 
-    public AccessController(AccessService accessService) {
+    public AccessController(AccessService accessService, UserService userService) {
         this.accessService = accessService;
+        this.userService = userService;
+    }
+
+    /**
+     * Récupère l'utilisateur actuellement connecté depuis le contexte de sécurité.
+     * Le principal contient l'email de l'utilisateur (String), pas l'objet User complet.
+     */
+    private User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = (String) authentication.getPrincipal();
+        return userService.findByEmail(email);
     }
 
 
@@ -29,7 +42,7 @@ public class AccessController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        User currentUser = (User) authentication.getPrincipal();
+        User currentUser = getCurrentUser();
 
         if (!"ADMIN".equalsIgnoreCase(currentUser.getRole())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -49,7 +62,7 @@ public class AccessController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        User currentUser = (User) authentication.getPrincipal();
+        User currentUser = getCurrentUser();
         Optional<Access> accessOpt = accessService.getAccessById(id);
 
         if (accessOpt.isEmpty()) {
@@ -77,7 +90,7 @@ public class AccessController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        User currentUser = (User) authentication.getPrincipal();
+        User currentUser = getCurrentUser();
 
         if (access.getPool() == null) {
             return ResponseEntity.badRequest().build();
@@ -105,7 +118,7 @@ public class AccessController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        User currentUser = (User) authentication.getPrincipal();
+        User currentUser = getCurrentUser();
         Optional<Access> existingAccessOpt = accessService.getAccessById(id);
 
         if (existingAccessOpt.isEmpty()) {
@@ -139,7 +152,7 @@ public class AccessController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        User currentUser = (User) authentication.getPrincipal();
+        User currentUser = getCurrentUser();
         Optional<Access> accessOpt = accessService.getAccessById(id);
 
         if (accessOpt.isEmpty()) {
