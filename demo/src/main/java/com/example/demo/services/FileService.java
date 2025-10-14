@@ -11,12 +11,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 
+
 @Service
 public class FileService {
+    private static final Logger logger = LoggerFactory.getLogger(FileService.class);
+
     private final SftpConfig sftpConfig;
     private final FileRepository fileRepository;
 
@@ -126,18 +132,32 @@ public class FileService {
     }
 
     public void uploadToDir(String remoteDir, String filename, InputStream data) throws Exception {
+        long startTime = System.currentTimeMillis();
         Session session = null;
         ChannelSftp sftp = null;
         try (InputStream in = data) {
+            long sessionStart = System.currentTimeMillis();
             session = createSession();
+            logger.info("SFTP session creation took {} ms", System.currentTimeMillis() - sessionStart);
+
+            long sftpStart = System.currentTimeMillis();
             sftp = openSftp(session);
+            logger.info("SFTP channel open took {} ms", System.currentTimeMillis() - sftpStart);
+
+            long dirStart = System.currentTimeMillis();
             ensureDirectory(sftp, remoteDir);
+            logger.info("Ensure directory took {} ms", System.currentTimeMillis() - dirStart);
+
             sftp.cd(remoteDir);
+
+            long putStart = System.currentTimeMillis();
             sftp.put(in, filename);
+            logger.info("SFTP put took {} ms", System.currentTimeMillis() - putStart);
         } finally {
             if (sftp != null) sftp.disconnect();
             if (session != null) session.disconnect();
         }
+        logger.info("Total uploadToDir took {} ms", System.currentTimeMillis() - startTime);
     }
 
     public void deleteRemote(String remotePath) throws Exception {
