@@ -20,34 +20,45 @@ if [ -n "${SFTP_KNOWN_HOSTS_HOST:-}" ]; then
 fi
 # --- END SFTP KEY ---
 
+# --- ASSERT VARS TUNNEL ---
+: "${SSH_KEY_BASE64:?missing}"
+: "${SSH_HOST:?missing}"
+: "${SSH_USER:?missing}"
+: "${SSH_PORT:?missing}"
+: "${SSH_REMOTE_HOST:?missing}"
+: "${SSH_REMOTE_PORT:?missing}"
+: "${LOCAL_TUNNEL_PORT:?missing}"
+# --- END ASSERT ---
 
-if [[ -n "${SSH_KEY_BASE64:-}" ]]; then
-  echo "$SSH_KEY_BASE64" | base64 -d > /tmp/ssh_key_db
-  chmod 600 /tmp/ssh_key_db
-else
-  exit 1
-fi
+# --- TUNNEL KNOWN_HOSTS ---
+mkdir -p /home/spring/.ssh
+chmod 700 /home/spring/.ssh
+ssh-keyscan -p "${SSH_PORT}" "${SSH_HOST}" > /home/spring/.ssh/known_hosts 2>/dev/null
+chmod 644 /home/spring/.ssh/known_hosts
+# --- END ---
 
+# --- DECODE SSH KEY FOR TUNNEL ---
+echo "$SSH_KEY_BASE64" | base64 -d > /tmp/ssh_key_db
+chmod 600 /tmp/ssh_key_db
+# --- END ---
+
+# --- START TUNNEL (STRICT) ---
 ssh -i /tmp/ssh_key_db \
+    -o UserKnownHostsFile=/home/spring/.ssh/known_hosts \
     -o StrictHostKeyChecking=yes \
     -o ServerAliveInterval=30 \
     -o ServerAliveCountMax=3 \
     -o ExitOnForwardFailure=yes \
-    -f -N -p "${SSH_PORT}" \
+    -NT -p "${SSH_PORT}" \
     -L "127.0.0.1:${LOCAL_TUNNEL_PORT}:${SSH_REMOTE_HOST}:${SSH_REMOTE_PORT}" \
-    "${SSH_USER}@${SSH_HOST}"
+    "${SSH_USER}@${SSH_HOST}" &
+TUNNEL_PID=$!
+trap 'kill -TERM "$TUNNEL_PID" 2>/dev/null || true; wait "$TUNNEL_PID" 2>/dev/null || true' EXIT INT TERM
 
-for i in {1..15}; do
-  if nc -z 127.0.0.1 "${LOCAL_TUNNEL_PORT}"; then
-    echo "✅ Tunnel ready!"
-    break
-  fi
+for i in {1..20}; do
+  nc -z 127.0.0.1 "${LOCAL_TUNNEL_PORT}" && break
   sleep 1
 done
+nc -z 127.0.0.1 "${LOCAL_TUNNEL_PORT}" || { echo "SSH tunnel failed to start"; exit 1; }
 
-if ! nc -z 127.0.0.1 "${LOCAL_TUNNEL_PORT}"; then
-  exit 1
-fi
-
-echo "Starting Spring Boot application..."
 exec java ${JAVA_OPTS:-} -jar /app/app.jar
