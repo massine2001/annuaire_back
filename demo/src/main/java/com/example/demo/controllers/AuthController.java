@@ -61,7 +61,7 @@ public class AuthController {
             @RequestBody RegisterRequest request,
             HttpServletResponse response
     ) {
-        if (userService.findByEmail(request.getEmail()) != null) {
+        if (userService.existsByEmail(request.getEmail())) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
 
