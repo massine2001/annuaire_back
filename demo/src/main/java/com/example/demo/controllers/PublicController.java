@@ -40,7 +40,7 @@ public class PublicController {
                             "name", pool.getName(),
                             "description", pool.getDescription() != null ? pool.getDescription() : "",
                             "createdAt", pool.getCreatedAt(),
-                            "fileCount", fileService.getFilesByPoolId(pool.getId()).size(),
+                            "fileCount", fileService.findByPoolId(pool.getId()).size(),
                             "isPublic", true
                     );
                     return poolData;
@@ -95,16 +95,18 @@ public class PublicController {
                     .body(Map.of("error", "Ce pool n'est pas public"));
         }
 
-        List<File> files = fileService.getFilesByPoolId(poolId);
+        List<File> files = fileService.findByPoolId(poolId);
 
         List<Map<String, Object>> filesData = files.stream()
-                .map(file -> Map.of(
-                        "id", file.getId(),
-                        "fileName", file.getFileName(),
-                        "filePath", file.getFilePath(),
-                        "uploadedAt", file.getUploadedAt(),
-                        "poolId", file.getPoolId()
-                ))
+                .map(file -> {
+                    Map<String, Object> fileData = new java.util.HashMap<>();
+                    fileData.put("id", file.getId());
+                    fileData.put("fileName", file.getName());
+                    fileData.put("filePath", file.getPath());
+                    fileData.put("uploadedAt", file.getCreatedAt());
+                    fileData.put("poolId", file.getPool().getId());
+                    return fileData;
+                })
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(filesData);
