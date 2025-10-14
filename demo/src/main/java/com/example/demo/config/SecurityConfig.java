@@ -39,8 +39,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/invitation/**").permitAll()
                         .requestMatchers("/api/pools/public").permitAll()  // Liste des pools publics
-                        .requestMatchers("/api/pools/*/public").permitAll()  // Détails d'un pool public
-                        .requestMatchers("/api/files/pool/*/public").permitAll()  // Fichiers d'un pool public
+                        .requestMatchers("/api/pools/**/public").permitAll()  // Détails d'un pool public
+                        .requestMatchers("/api/files/pool/**/public").permitAll()  // Fichiers d'un pool public
                         .requestMatchers("/api/files/download/**").permitAll()  // Téléchargement de fichiers publics
                         .anyRequest().authenticated()
                 )
