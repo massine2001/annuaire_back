@@ -24,7 +24,7 @@ public class CookieService {
             cookie.append("Secure; ");
         }
 
-        cookie.append("SameSite=Strict; ");
+        cookie.append("SameSite=None; ");  // Changed from Strict to None for cross-site
         cookie.append("Path=/; ");
         cookie.append("Max-Age=").append(24 * 60 * 60); // 24 heures
 
@@ -46,7 +46,7 @@ public class CookieService {
             cookie.append("Secure; ");
         }
 
-        cookie.append("SameSite=Strict; ");
+        cookie.append("SameSite=None; ");  // Changed from Strict to None for cross-site
         cookie.append("Path=/; ");
         cookie.append("Max-Age=0");
 
