@@ -22,7 +22,7 @@ RUN apk add --no-cache curl openssh-client netcat-openbsd bash
 RUN addgroup -S spring && adduser -S spring -G spring
 
 COPY --from=build /app/target/*.jar app.jar
-COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+COPY ./docker-entrypoint.sh /app/docker-entrypoint.sh
 
 RUN chmod +x /app/docker-entrypoint.sh && \
     chown spring:spring /app/docker-entrypoint.sh /app/app.jar
