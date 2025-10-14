@@ -1,0 +1,46 @@
+# Build artifacts
+target/
+*.jar
+*.war
+*.class
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+
+# Git
+.git/
+.gitignore
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Documentation
+README.md
+CHANGELOG.md
+DEPLOYMENT_CHECKLIST.md
+GIT_GUIDE.md
+SUMMARY.txt
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Application data
+annuaire/
+
+# Test files
+src/test/
