@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class CookieService {
 
-    @Value("${cookie.secure:true}")
+    @Value("${cookie.secure:false}")
     private boolean cookieSecure;
 
     @Value("${cookie.domain:}")
@@ -22,9 +22,11 @@ public class CookieService {
 
         if (cookieSecure) {
             cookie.append("Secure; ");
+            cookie.append("SameSite=None; ");
+        } else {
+            cookie.append("SameSite=Lax; ");
         }
 
-        cookie.append("SameSite=None; ");  // Changed from Strict to None for cross-site
         cookie.append("Path=/; ");
         cookie.append("Max-Age=").append(24 * 60 * 60); // 24 heures
 
@@ -44,9 +46,11 @@ public class CookieService {
 
         if (cookieSecure) {
             cookie.append("Secure; ");
+            cookie.append("SameSite=None; ");
+        } else {
+            cookie.append("SameSite=Lax; ");
         }
 
-        cookie.append("SameSite=None; ");  // Changed from Strict to None for cross-site
         cookie.append("Path=/; ");
         cookie.append("Max-Age=0");
 

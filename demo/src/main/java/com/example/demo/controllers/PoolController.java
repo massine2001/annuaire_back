@@ -241,24 +241,28 @@ public class PoolController {
     }
     @GetMapping("/stats/{poolId}")
     public ResponseEntity<Map<String, Object>> getPoolStats(@PathVariable int poolId) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        User currentUser = getCurrentUser();
-        if (currentUser == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-        
         Pool pool = poolService.getPoolById(poolId);
 
         if (pool == null) {
             return ResponseEntity.notFound().build();
         }
 
-        if (!accessService.userHasAccessToPool(currentUser.getId(), poolId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        boolean isPublicPool = pool.getPublicAccess() != null && pool.getPublicAccess();
+
+        if (!isPublicPool) {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+
+            User currentUser = getCurrentUser();
+            if (currentUser == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+
+            if (!accessService.userHasAccessToPool(currentUser.getId(), poolId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
         }
 
         Map<String, Object> stats = new HashMap<>();

@@ -42,6 +42,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/pools/*/public").permitAll()  // Détails d'un pool public
                         .requestMatchers("/api/files/pool/*/public").permitAll()  // Fichiers d'un pool public
                         .requestMatchers("/api/files/download/**").permitAll()  // Téléchargement de fichiers publics
+                        .requestMatchers("/api/pool/stats/*").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
@@ -66,6 +67,7 @@ public class SecurityConfig {
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

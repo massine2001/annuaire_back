@@ -72,7 +72,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 if (user != null && jwtService.isTokenValid(jwt, email)) {
 
-                    // Le principal doit être l'email (String) pour que les contrôleurs puissent le récupérer
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             email,  
                             null,
