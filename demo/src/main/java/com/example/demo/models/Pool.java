@@ -29,6 +29,10 @@ public class Pool {
     @Column(name = "created_at")
     private Instant createdAt;
 
+    @ColumnDefault("0")
+    @Column(name = "is_public", nullable = false)
+    private Boolean isPublic = false;
+
     public Integer getId() {
         return id;
     }
@@ -67,6 +71,14 @@ public class Pool {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Boolean getIsPublic() {
+        return isPublic;
+    }
+
+    public void setIsPublic(Boolean isPublic) {
+        this.isPublic = isPublic;
     }
 
 }
