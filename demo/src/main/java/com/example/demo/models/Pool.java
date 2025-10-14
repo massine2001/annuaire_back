@@ -30,8 +30,8 @@ public class Pool {
     private Instant createdAt;
 
     @ColumnDefault("0")
-    @Column(name = "is_public", nullable = false)
-    private Boolean isPublic = false;
+    @Column(name = "public_access", nullable = false)
+    private Boolean publicAccess = false;
 
     public Integer getId() {
         return id;
@@ -73,12 +73,12 @@ public class Pool {
         this.createdAt = createdAt;
     }
 
-    public Boolean getIsPublic() {
-        return isPublic;
+    public Boolean getPublicAccess() {
+        return publicAccess;
     }
 
-    public void setIsPublic(Boolean isPublic) {
-        this.isPublic = isPublic;
+    public void setPublicAccess(Boolean publicAccess) {
+        this.publicAccess = publicAccess;
     }
 
 }

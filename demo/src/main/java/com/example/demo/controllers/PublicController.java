@@ -30,7 +30,7 @@ public class PublicController {
     @GetMapping("/pools/public")
     public ResponseEntity<List<Map<String, Object>>> getPublicPools() {
         List<Pool> publicPools = poolService.getAllPools().stream()
-                .filter(pool -> pool.getIsPublic() != null && pool.getIsPublic())
+                .filter(pool -> pool.getPublicAccess() != null && pool.getPublicAccess())
                 .collect(Collectors.toList());
 
         List<Map<String, Object>> poolsWithFileCount = publicPools.stream()
@@ -62,7 +62,7 @@ public class PublicController {
                     .body(Map.of("error", "Pool non trouvé"));
         }
 
-        if (pool.getIsPublic() == null || !pool.getIsPublic()) {
+        if (pool.getPublicAccess() == null || !pool.getPublicAccess()) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "Ce pool n'est pas public"));
         }
@@ -90,7 +90,7 @@ public class PublicController {
                     .body(Map.of("error", "Pool non trouvé"));
         }
 
-        if (pool.getIsPublic() == null || !pool.getIsPublic()) {
+        if (pool.getPublicAccess() == null || !pool.getPublicAccess()) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "Ce pool n'est pas public"));
         }
