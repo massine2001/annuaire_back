@@ -24,14 +24,13 @@ public class AccessController {
         this.userService = userService;
     }
 
-    /**
-     * Récupère l'utilisateur actuellement connecté depuis le contexte de sécurité.
-     * Le principal contient l'email de l'utilisateur (String), pas l'objet User complet.
-     */
     private User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof String)) {
+            return null;
+        }
         String email = (String) authentication.getPrincipal();
-        return userService.findByEmail(email);
+        return userService.findByEmailSafe(email);
     }
 
 
@@ -43,6 +42,9 @@ public class AccessController {
         }
 
         User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
         if (!"ADMIN".equalsIgnoreCase(currentUser.getRole())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -63,6 +65,10 @@ public class AccessController {
         }
 
         User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        
         Optional<Access> accessOpt = accessService.getAccessById(id);
 
         if (accessOpt.isEmpty()) {
@@ -91,6 +97,9 @@ public class AccessController {
         }
 
         User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
         if (access.getPool() == null) {
             return ResponseEntity.badRequest().build();
@@ -103,7 +112,7 @@ public class AccessController {
 
         if ("owner".equalsIgnoreCase(access.getRole())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(null); // Un pool ne peut avoir qu'un seul owner
+                    .body(null); 
         }
 
         Access createdAccess = accessService.saveAccess(access);
@@ -119,6 +128,10 @@ public class AccessController {
         }
 
         User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        
         Optional<Access> existingAccessOpt = accessService.getAccessById(id);
 
         if (existingAccessOpt.isEmpty()) {
@@ -153,6 +166,10 @@ public class AccessController {
         }
 
         User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        
         Optional<Access> accessOpt = accessService.getAccessById(id);
 
         if (accessOpt.isEmpty()) {

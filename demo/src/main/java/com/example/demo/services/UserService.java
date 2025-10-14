@@ -31,6 +31,12 @@ public class UserService {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User with email : "+email+" not found"));
     }
+    
+ 
+    public User findByEmailSafe(String email){
+        return userRepository.findByEmail(email).orElse(null);
+    }
+    
     public List<User> findByRole(String role){
         return userRepository.findByRole(role);
     }

@@ -98,9 +98,8 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        // Le principal est l'email (String), pas l'objet User
         String email = (String) authentication.getPrincipal();
-        User user = userService.findByEmail(email);
+        User user = userService.findByEmailSafe(email);
 
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();

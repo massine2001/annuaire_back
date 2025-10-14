@@ -50,14 +50,14 @@ public class FileController {
         this.accessService = accessService;
     }
 
-    /**
-     * Récupère l'utilisateur actuellement connecté depuis le contexte de sécurité.
-     * Le principal contient l'email de l'utilisateur (String), pas l'objet User complet.
-     */
+
     private User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof String)) {
+            return null;
+        }
         String email = (String) authentication.getPrincipal();
-        return userService.findByEmail(email);
+        return userService.findByEmailSafe(email);
     }
 
 
@@ -70,6 +70,9 @@ public class FileController {
         }
 
         User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
         List<Integer> accessiblePoolIds = accessService.getAccessiblePoolIds(currentUser.getId());
 
@@ -94,6 +97,10 @@ public class FileController {
         }
 
         User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        
         File file = fileService.getFileById(id);
 
         if (file == null) {
@@ -115,6 +122,10 @@ public class FileController {
         }
 
         User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        
         File file = fileService.getFileById(id);
 
         if (file == null) {
@@ -142,6 +153,10 @@ public class FileController {
         }
 
         User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        
         File file = fileService.getFileById(id);
 
         if (file == null) {
@@ -174,6 +189,10 @@ public class FileController {
         }
 
         User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        
         File existingFile = fileService.getFileById(id);
 
         if (existingFile == null) {
@@ -186,7 +205,7 @@ public class FileController {
 
         if (!accessService.userCanModifyInPool(currentUser.getId(), existingFile.getPool().getId())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(null); // Ou un message d'erreur approprié
+                    .body(null);
         }
 
         try {
@@ -236,6 +255,10 @@ public class FileController {
         }
 
         User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        
         File file = fileService.getFileById(id);
 
         if (file == null) {
@@ -276,6 +299,10 @@ public class FileController {
             }
 
             User currentUser = getCurrentUser();
+            if (currentUser == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            
             Pool pool = poolService.getPoolById(poolId);
 
             if (pool == null) {
@@ -330,6 +357,10 @@ public class FileController {
         }
 
         User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        
         File file = fileService.getFileById(fileId);
 
         if (file == null) {
@@ -365,6 +396,10 @@ public class FileController {
         }
 
         User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        
         File file = fileService.getFileById(id);
 
         if (file == null) {

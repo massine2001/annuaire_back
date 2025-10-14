@@ -68,12 +68,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                User user = userService.findByEmail(email);
+                User user = userService.findByEmailSafe(email);
 
                 if (user != null && jwtService.isTokenValid(jwt, email)) {
 
+                    // Le principal doit être l'email (String) pour que les contrôleurs puissent le récupérer
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            user,
+                            email,  
                             null,
                             Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().toUpperCase()))
                     );

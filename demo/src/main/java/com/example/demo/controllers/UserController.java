@@ -23,14 +23,14 @@ public class UserController {
         this.accessService = accessService;
     }
 
-    /**
-     * Récupère l'utilisateur actuellement connecté depuis le contexte de sécurité.
-     * Le principal contient l'email de l'utilisateur (String), pas l'objet User complet.
-     */
+
     private User getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof String)) {
+            return null;
+        }
         String email = (String) authentication.getPrincipal();
-        return userService.findByEmail(email);
+        return userService.findByEmailSafe(email);
     }
 
 
@@ -43,6 +43,9 @@ public class UserController {
         }
 
         User currentUser = getAuthenticatedUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
         if (!"ADMIN".equalsIgnoreCase(currentUser.getRole())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -67,6 +70,9 @@ public class UserController {
         }
 
         User currentUser = getAuthenticatedUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
         if (!"ADMIN".equalsIgnoreCase(currentUser.getRole())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -85,6 +91,10 @@ public class UserController {
         }
 
         User currentUser = getAuthenticatedUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
         User user = userService.findById(id);
 
         if (user == null) {
@@ -112,6 +122,9 @@ public class UserController {
         }
 
         User currentUser = getAuthenticatedUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
         if (!"ADMIN".equalsIgnoreCase(currentUser.getRole())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -132,6 +145,9 @@ public class UserController {
         }
 
         User currentUser = getAuthenticatedUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
         boolean isSelf = currentUser.getId().equals(id);
         boolean isAdmin = "ADMIN".equalsIgnoreCase(currentUser.getRole());
@@ -160,6 +176,9 @@ public class UserController {
         }
 
         User currentUser = getAuthenticatedUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
         if (!"ADMIN".equalsIgnoreCase(currentUser.getRole())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -182,6 +201,10 @@ public class UserController {
         }
 
         User currentUser = getAuthenticatedUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
         User user = userService.findByEmail(email);
 
         if (user == null) {
@@ -209,6 +232,9 @@ public class UserController {
         }
 
         User currentUser = getAuthenticatedUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
         if (!"ADMIN".equalsIgnoreCase(currentUser.getRole())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -233,6 +259,9 @@ public class UserController {
         }
 
         User currentUser = getAuthenticatedUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
         if (!"ADMIN".equalsIgnoreCase(currentUser.getRole())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -257,6 +286,9 @@ public class UserController {
         }
 
         User currentUser = getAuthenticatedUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
         if (!"ADMIN".equalsIgnoreCase(currentUser.getRole())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -281,6 +313,9 @@ public class UserController {
         }
 
         User currentUser = getAuthenticatedUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
         boolean isSelf = currentUser.getId().equals(id);
         boolean isAdmin = "ADMIN".equalsIgnoreCase(currentUser.getRole());
@@ -305,6 +340,9 @@ public class UserController {
         }
 
         User currentUser = getAuthenticatedUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
         boolean isSelf = currentUser.getId().equals(id);
         boolean isAdmin = "ADMIN".equalsIgnoreCase(currentUser.getRole());
@@ -347,4 +385,5 @@ public class UserController {
                         .anyMatch(pool2 -> pool1.getId().equals(pool2.getId())));
     }
 }
+
 

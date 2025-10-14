@@ -75,13 +75,19 @@ public class PoolController {
      */
     private User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof String)) {
+            return null;
+        }
         String email = (String) authentication.getPrincipal();
-        return userService.findByEmail(email);
+        return userService.findByEmailSafe(email);
     }
 
     @GetMapping("/")
     public ResponseEntity<List<Pool>> getPools() {
         User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
         List<Pool> pools = poolService.getAllPoolsByUserId(currentUser.getId());
 
@@ -105,6 +111,10 @@ public class PoolController {
         }
 
         User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        
         Pool pool = poolService.getPoolById(id);
 
         if(pool == null) {
@@ -122,6 +132,9 @@ public class PoolController {
     @PostMapping("/")
     public ResponseEntity<Pool> createPool(@RequestBody Pool pool) {
         User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
         pool.setCreatedBy(currentUser.getId());
 
@@ -146,6 +159,10 @@ public class PoolController {
         }
 
         User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        
         Pool existingPool = poolService.getPoolById(id);
 
         if (existingPool == null) {
@@ -169,6 +186,10 @@ public class PoolController {
         }
 
         User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        
         Pool pool = poolService.getPoolById(id);
 
         if (pool == null) {
@@ -191,6 +212,9 @@ public class PoolController {
         }
 
         User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
         if (!accessService.userHasAccessToPool(currentUser.getId(), id)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -223,6 +247,10 @@ public class PoolController {
         }
 
         User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        
         Pool pool = poolService.getPoolById(poolId);
 
         if (pool == null) {
@@ -361,6 +389,10 @@ public class PoolController {
         }
 
         User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        
         Pool pool = poolService.getPoolById(poolId);
 
         if (pool == null) {
