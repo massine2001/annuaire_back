@@ -4,15 +4,15 @@ set -euo pipefail
 
 if [[ -n "${SSH_KEY_BASE64:-}" ]]; then
   echo "🔑 Decoding SSH key..."
-  echo "$SSH_KEY_BASE64" | base64 -d > /app/ssh_key_db
-  chmod 600 /app/ssh_key_db
+  echo "$SSH_KEY_BASE64" | base64 -d > /tmp/ssh_key_db
+  chmod 600 /tmp/ssh_key_db
   echo "✅ SSH key ready"
 else
   echo "❌ SSH_KEY_BASE64 not found!"
   exit 1
 fi
 
-ssh -i /app/ssh_key_db \
+ssh -i /tmp/ssh_key_db \
     -o StrictHostKeyChecking=accept-new \
     -o ServerAliveInterval=30 \
     -o ServerAliveCountMax=3 \
