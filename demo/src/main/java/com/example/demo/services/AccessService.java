@@ -1,6 +1,7 @@
 package com.example.demo.services;
 
 import com.example.demo.models.Access;
+import com.example.demo.models.File;
 import com.example.demo.models.Pool;
 import com.example.demo.models.User;
 import com.example.demo.repositories.AccessRepository;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class AccessService {
@@ -56,5 +58,45 @@ public class AccessService {
     public List<Access> getAccessesByPool(int poolId) {
         return accessRepository.findByPoolId(poolId);
     }
+    public boolean userHasAccessToPool(int userId, int poolId) {
+        return accessRepository.existsByUserIdAndPoolId(userId, poolId);
+    }
 
+
+    public boolean userCanAccessFile(int userId, File file) {
+        if (file == null || file.getPool() == null) return false;
+        return userHasAccessToPool(userId, file.getPool().getId());
+    }
+
+
+    public Access getUserAccessToPool(int userId, int poolId) {
+        Optional<Access> access = accessRepository.findByUserIdAndPoolId(userId, poolId);
+        return access.orElse(null);
+    }
+
+
+    public boolean userCanModifyInPool(int userId, int poolId) {
+        Access access = getUserAccessToPool(userId, poolId);
+        if (access == null) return false;
+
+        String role = access.getRole();
+        
+        return "owner".equalsIgnoreCase(role) || "admin".equalsIgnoreCase(role);
+    }
+
+
+    public boolean userIsOwnerOrAdmin(int userId, int poolId) {
+        Access access = getUserAccessToPool(userId, poolId);
+        if (access == null) return false;
+
+        String role = access.getRole();
+        return "owner".equalsIgnoreCase(role) || "admin".equalsIgnoreCase(role);
+    }
+
+    public List<Integer> getAccessiblePoolIds(int userId) {
+        return accessRepository.findByUserId(userId)
+                .stream()
+                .map(access -> access.getPool().getId())
+                .collect(Collectors.toList());
+    }
 }

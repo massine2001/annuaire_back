@@ -95,11 +95,33 @@ public class FileService {
     }
 
     public String sanitizeFilename(String original) {
-        if (original == null) return "unnamed";
+        if (original == null || original.isBlank()) return "unnamed";
+        
         String cleaned = original.replace("\\", "/");
         int slash = cleaned.lastIndexOf('/');
         if (slash >= 0) cleaned = cleaned.substring(slash + 1);
-        cleaned = cleaned.replace("..", "");
+        
+        cleaned = cleaned.replaceAll("[^a-zA-Z0-9._\\-\\s]", "_");
+        
+        cleaned = cleaned.replaceAll("\\.{2,}", ".");  // Remplacer .. par .
+        cleaned = cleaned.trim();
+        
+        if (cleaned.isEmpty() || cleaned.matches("^\\.+$")) {
+            return "unnamed";
+        }
+        
+        if (cleaned.length() > 255) {
+            String extension = "";
+            int lastDot = cleaned.lastIndexOf('.');
+            if (lastDot > 0) {
+                extension = cleaned.substring(lastDot);
+                cleaned = cleaned.substring(0, Math.min(255 - extension.length(), lastDot));
+            } else {
+                cleaned = cleaned.substring(0, 255);
+            }
+            cleaned = cleaned + extension;
+        }
+        
         return cleaned;
     }
 

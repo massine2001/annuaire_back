@@ -38,6 +38,7 @@ public class User implements UserDetails {
 
     @Column(name = "created_at", nullable = true, updatable = false)
     private Instant createdAt;
+    
 
     @PrePersist
     protected void onCreate() {

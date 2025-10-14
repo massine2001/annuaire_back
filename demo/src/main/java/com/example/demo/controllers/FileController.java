@@ -1,14 +1,20 @@
 package com.example.demo.controllers;
 
 import com.example.demo.config.SftpConfig;
+import com.example.demo.exceptions.ErrorResponse;
 import com.example.demo.models.File;
 import com.example.demo.models.Pool;
 import com.example.demo.models.User;
+import com.example.demo.services.AccessService;
 import com.example.demo.services.FileService;
 import com.example.demo.services.PoolService;
 import com.example.demo.services.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.http.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -16,26 +22,53 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/files")
 public class FileController {
+    
+    private static final Logger logger = LoggerFactory.getLogger(FileController.class);
+    
     private final FileService fileService;
     private final PoolService poolService;
     private final UserService userService;
     private final SftpConfig sftpConfig;
+    private final AccessService accessService; 
 
-    public FileController(FileService fileService, PoolService poolService, UserService userService, SftpConfig sftpConfig) {
+    public FileController(
+            FileService fileService,
+            PoolService poolService,
+            UserService userService,
+            SftpConfig sftpConfig,
+            AccessService accessService 
+    ) {
         this.fileService = fileService;
         this.poolService = poolService;
         this.userService = userService;
         this.sftpConfig = sftpConfig;
+        this.accessService = accessService;
     }
+
 
     @GetMapping
     public ResponseEntity<List<File>> getAll() {
-        List<File> files = fileService.getAllFiles();
-        return ResponseEntity.ok(files);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        User currentUser = (User) authentication.getPrincipal();
+
+        List<Integer> accessiblePoolIds = accessService.getAccessiblePoolIds(currentUser.getId());
+
+        List<File> allFiles = fileService.getAllFiles();
+        List<File> accessibleFiles = allFiles.stream()
+                .filter(file -> file.getPool() != null && accessiblePoolIds.contains(file.getPool().getId()))
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(accessibleFiles);
     }
 
     @GetMapping("/count")
@@ -45,22 +78,75 @@ public class FileController {
 
     @GetMapping("/{id}")
     public ResponseEntity<File> getById(@PathVariable int id) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        User currentUser = (User) authentication.getPrincipal();
         File file = fileService.getFileById(id);
-        if (file == null) return ResponseEntity.notFound().build();
+
+        if (file == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (!accessService.userCanAccessFile(currentUser.getId(), file)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         return ResponseEntity.ok(file);
     }
 
     @GetMapping("/uploader/{id}")
     public ResponseEntity<User> getUploader(@PathVariable int id) {
-        User user = fileService.findUploader(id);
-        if (user == null) return ResponseEntity.notFound().build();
-        return ResponseEntity.ok(user);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        User currentUser = (User) authentication.getPrincipal();
+        File file = fileService.getFileById(id);
+
+        if (file == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (!accessService.userCanAccessFile(currentUser.getId(), file)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        User uploader = fileService.findUploader(id);
+        if (uploader == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(uploader);
     }
+
 
     @GetMapping("/pool/{id}")
     public ResponseEntity<Pool> getPool(@PathVariable int id) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        User currentUser = (User) authentication.getPrincipal();
+        File file = fileService.getFileById(id);
+
+        if (file == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (!accessService.userCanAccessFile(currentUser.getId(), file)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         Pool pool = fileService.findPoolById(id);
-        if (pool == null) return ResponseEntity.notFound().build();
+        if (pool == null) {
+            return ResponseEntity.notFound().build();
+        }
+
         return ResponseEntity.ok(pool);
     }
 
@@ -72,8 +158,26 @@ public class FileController {
             @RequestParam(value = "description", required = false) String description,
             @RequestParam(value = "expirationDate", required = false) String expirationDateStr) {
 
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        User currentUser = (User) authentication.getPrincipal();
         File existingFile = fileService.getFileById(id);
-        if (existingFile == null) return ResponseEntity.notFound().build();
+
+        if (existingFile == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (!accessService.userCanAccessFile(currentUser.getId(), existingFile)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        if (!accessService.userCanModifyInPool(currentUser.getId(), existingFile.getPool().getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(null); // Ou un message d'erreur approprié
+        }
 
         try {
             if (newContent != null && !newContent.isEmpty()) {
@@ -104,39 +208,79 @@ public class FileController {
 
             File updated = fileService.updateFileEntity(id, existingFile);
             return ResponseEntity.ok(updated);
+        } catch (DateTimeParseException e) {
+            logger.error("Invalid date format for file {}: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         } catch (Exception e) {
+            logger.error("Error updating file {}: {}", id, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteFile(@PathVariable int id) {
-        File f = fileService.getFileById(id);
-        if (f == null) return ResponseEntity.notFound().build();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        User currentUser = (User) authentication.getPrincipal();
+        File file = fileService.getFileById(id);
+
+        if (file == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (!accessService.userCanAccessFile(currentUser.getId(), file)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        if (!accessService.userCanModifyInPool(currentUser.getId(), file.getPool().getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         try {
-            fileService.deleteRemote(f.getPath());
+            fileService.deleteRemote(file.getPath());
         } catch (Exception e) {
+            logger.error("Error deleting remote file {}: {}", file.getPath(), e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY).build();
         }
+
         fileService.deleteFileById(id);
         return ResponseEntity.noContent().build();
     }
+
 
     @PostMapping("/upload")
     public ResponseEntity<File> uploadFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam("poolId") int poolId,
-            @RequestParam("userId") int userId,
             @RequestParam(value = "description", required = false) String description,
             @RequestParam(value = "expirationDate", required = false) String expirationDateStr) {
 
         try {
-            Pool pool = poolService.getPoolById(poolId);
-            User user = userService.findById(userId);
-            if (pool == null || user == null) return ResponseEntity.badRequest().build();
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
 
-            String remoteDir = fileService.buildRemoteDirFor(poolId, userId);
+            User currentUser = (User) authentication.getPrincipal();
+            Pool pool = poolService.getPoolById(poolId);
+
+            if (pool == null) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            if (!accessService.userHasAccessToPool(currentUser.getId(), poolId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+
+            if (!accessService.userCanModifyInPool(currentUser.getId(), poolId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+
+            String remoteDir = fileService.buildRemoteDirFor(poolId, currentUser.getId());
             String safeName = fileService.sanitizeFilename(file.getOriginalFilename());
             fileService.uploadToDir(remoteDir, safeName, file.getInputStream());
 
@@ -144,9 +288,10 @@ public class FileController {
             savedFile.setName(safeName);
             savedFile.setPath(remoteDir + "/" + safeName);
             savedFile.setPool(pool);
-            savedFile.setUserUploader(user);
+            savedFile.setUserUploader(currentUser);
             savedFile.setCreatedAt(Instant.now());
             savedFile.setDescription(description);
+
             if (expirationDateStr != null && !expirationDateStr.isBlank()) {
                 try {
                     savedFile.setExpirationDate(LocalDate.parse(expirationDateStr));
@@ -157,39 +302,74 @@ public class FileController {
 
             File persisted = fileService.saveFile(savedFile);
             return ResponseEntity.status(HttpStatus.CREATED).body(persisted);
+        } catch (DateTimeParseException e) {
+            logger.error("Invalid date format: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         } catch (Exception e) {
+            logger.error("Error uploading file to pool {}: {}", poolId, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
+
     @GetMapping("/download/{fileId}")
     public ResponseEntity<Resource> downloadFile(@PathVariable int fileId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        User currentUser = (User) authentication.getPrincipal();
         File file = fileService.getFileById(fileId);
-        if (file == null) return ResponseEntity.notFound().build();
+
+        if (file == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (!accessService.userCanAccessFile(currentUser.getId(), file)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         try {
             FileService.RemoteStream rs = fileService.getRemoteStream(file.getPath());
             HttpHeaders headers = new HttpHeaders();
             headers.setContentDisposition(ContentDisposition.attachment().filename(file.getName()).build());
             if (rs.length() >= 0) headers.setContentLength(rs.length());
+
             return ResponseEntity.ok()
                     .headers(headers)
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
                     .body(rs);
         } catch (Exception e) {
+            logger.error("Error downloading file {}: {}", fileId, e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
         }
     }
 
+
     @GetMapping("/preview/{id}")
     public ResponseEntity<Resource> previewFile(@PathVariable int id) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        User currentUser = (User) authentication.getPrincipal();
         File file = fileService.getFileById(id);
-        if (file == null) return ResponseEntity.notFound().build();
+
+        if (file == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (!accessService.userCanAccessFile(currentUser.getId(), file)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         try {
             FileService.RemoteStream rs = fileService.getRemoteStream(file.getPath());
             String fileName = file.getName().toLowerCase();
             MediaType contentType;
+
             if (fileName.endsWith(".pdf")) contentType = MediaType.APPLICATION_PDF;
             else if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) contentType = MediaType.IMAGE_JPEG;
             else if (fileName.endsWith(".png")) contentType = MediaType.IMAGE_PNG;
@@ -214,6 +394,7 @@ public class FileController {
                     .contentType(contentType)
                     .body(rs);
         } catch (Exception e) {
+            logger.error("Error previewing file {}: {}", id, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

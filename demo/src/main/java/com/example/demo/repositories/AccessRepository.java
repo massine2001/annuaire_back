@@ -26,6 +26,14 @@ public interface AccessRepository extends JpaRepository<Access, Integer> {
     List<Pool> getPoolsFromUser(@Param("user_id") int user_id);
     @Query("SELECT count(p) FROM Pool p JOIN Access a ON p.id = a.pool.id WHERE a.user.id = :user_id")
     int getCountPoolsFromUser(@Param("user_id") int user_id);
-    List<Access> findByPoolId(int poolId);
+    boolean existsByUserIdAndPoolId(int userId, int poolId);
 
+
+    Optional<Access> findByUserIdAndPoolId(int userId, int poolId);
+
+
+    List<Access> findByUserId(int userId);
+
+
+    List<Access> findByPoolId(int poolId);
 }

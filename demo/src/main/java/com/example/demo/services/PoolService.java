@@ -2,15 +2,23 @@ package com.example.demo.services;
 
 import com.example.demo.models.Pool;
 import com.example.demo.repositories.PoolRepository;
+import com.example.demo.repositories.AccessRepository;
+import com.example.demo.repositories.FileRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 public class PoolService {
     private final PoolRepository poolRepository;
-    public PoolService(PoolRepository poolRepository) {
+    private final AccessRepository accessRepository;
+    private final FileRepository fileRepository;
+
+    public PoolService(PoolRepository poolRepository, AccessRepository accessRepository, FileRepository fileRepository) {
         this.poolRepository = poolRepository;
+        this.accessRepository = accessRepository;
+        this.fileRepository = fileRepository;
     }
 
     public List<Pool> getAllPools() {
@@ -27,7 +35,13 @@ public class PoolService {
     public Pool savePool(Pool pool) {
         return poolRepository.save(pool);
     }
+
+    @Transactional
     public void deletePoolById(int id) {
+        accessRepository.findByPoolId(id).forEach(access -> accessRepository.delete(access));
+
+        fileRepository.findByPoolId(id).forEach(file -> fileRepository.delete(file));
+
         poolRepository.deleteById(id);
     }
     public Pool updatePool(int id,Pool pool) {
