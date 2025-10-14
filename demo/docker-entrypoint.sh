@@ -2,24 +2,24 @@
 set -euo pipefail
 
 # --- SFTP PRIVATE KEY MATERIALIZATION ---
+: "${SFTP_PRIVATE_KEY_B64:?missing}"
 
-if [ -z "${SFTP_PRIVATE_KEY_B64:-}" ]; then
-  echo "SFTP_PRIVATE_KEY_B64 manquant"; exit 1
-fi
+KEY_DIR="${SFTP_KEY_DIR:-/home/spring/.keys}"
+mkdir -p "$KEY_DIR"
+chmod 700 "$KEY_DIR"
 
-install -d -m 700 /opt/keys
-echo "$SFTP_PRIVATE_KEY_B64" | base64 -d > /opt/keys/sftp_id_rsa
-chmod 600 /opt/keys/sftp_id_rsa
-export SFTP_PRIVATE_KEY_PATH=/opt/keys/sftp_id_rsa
+echo "$SFTP_PRIVATE_KEY_B64" | base64 -d > "$KEY_DIR/sftp_id_rsa"
+chmod 600 "$KEY_DIR/sftp_id_rsa"
+export SFTP_PRIVATE_KEY_PATH="$KEY_DIR/sftp_id_rsa"
 
-# known_hosts (sécurité MITM)
 if [ -n "${SFTP_KNOWN_HOSTS_HOST:-}" ]; then
-  : "${SFTP_KNOWN_HOSTS_PORT:=22}"
-  ssh-keyscan -p "$SFTP_KNOWN_HOSTS_PORT" "$SFTP_KNOWN_HOSTS_HOST" > /opt/keys/known_hosts 2>/dev/null || true
-  chmod 644 /opt/keys/known_hosts
-  export SFTP_KNOWN_HOSTS_PATH=/opt/keys/known_hosts
+  : "${SFTP_KNOWN_HOSTS_PORT:=5022}"
+  ssh-keyscan -p "$SFTP_KNOWN_HOSTS_PORT" "$SFTP_KNOWN_HOSTS_HOST" > "$KEY_DIR/known_hosts" 2>/dev/null || true
+  chmod 644 "$KEY_DIR/known_hosts"
+  export SFTP_KNOWN_HOSTS_PATH="$KEY_DIR/known_hosts"
 fi
 # --- END SFTP KEY ---
+
 
 if [[ -n "${SSH_KEY_BASE64:-}" ]]; then
   echo "$SSH_KEY_BASE64" | base64 -d > /tmp/ssh_key_db
