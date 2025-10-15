@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 
 @Service
@@ -25,6 +26,10 @@ public class FileService {
 
     private final SftpConfig sftpConfig;
     private final FileRepository fileRepository;
+
+    // Pool de sessions SFTP pour réutilisation
+    private static final ConcurrentLinkedQueue<Session> sessionPool = new ConcurrentLinkedQueue<>();
+    private static final int MAX_POOL_SIZE = 5; // Limite pour éviter une consommation mémoire excessive
 
     public FileService(SftpConfig sftpConfig, FileRepository fileRepository) {
         this.sftpConfig = sftpConfig;
@@ -75,6 +80,9 @@ public class FileService {
                 sftpConfig.getPort()
         );
         session.setConfig("StrictHostKeyChecking", "no");
+        session.setConfig("compression.s2c", "zlib@openssh.com,zlib");
+        session.setConfig("compression.c2s", "zlib@openssh.com,zlib");
+        session.setConfig("compression_level", "9");
         session.connect();
         return session;
     }
@@ -137,8 +145,8 @@ public class FileService {
         ChannelSftp sftp = null;
         try (InputStream in = data) {
             long sessionStart = System.currentTimeMillis();
-            session = createSession();
-            logger.info("SFTP session creation took {} ms", System.currentTimeMillis() - sessionStart);
+            session = getSession();
+            logger.info("SFTP session retrieval took {} ms", System.currentTimeMillis() - sessionStart);
 
             long sftpStart = System.currentTimeMillis();
             sftp = openSftp(session);
@@ -155,7 +163,7 @@ public class FileService {
             logger.info("SFTP put took {} ms", System.currentTimeMillis() - putStart);
         } finally {
             if (sftp != null) sftp.disconnect();
-            if (session != null) session.disconnect();
+            returnSession(session);
         }
         logger.info("Total uploadToDir took {} ms", System.currentTimeMillis() - startTime);
     }
@@ -215,5 +223,37 @@ public class FileService {
         String remoteDir = buildRemoteDirFor(poolId, userId);
         String filename = sanitizeFilename(file.getOriginalFilename());
         uploadToDir(remoteDir, filename, file.getInputStream());
+    }
+
+    private Session getSession() throws JSchException {
+        Session session = sessionPool.poll();
+        if (session != null && session.isConnected()) {
+            return session;
+        }
+        // Si la session du pool n'est pas valide, créer une nouvelle
+        if (session != null) {
+            session.disconnect(); // Fermer la session invalide
+        }
+        JSch jsch = new JSch();
+        jsch.addIdentity(sftpConfig.getPrivateKeyPath());
+        session = jsch.getSession(
+                sftpConfig.getUsername(),
+                sftpConfig.getHost(),
+                sftpConfig.getPort()
+        );
+        session.setConfig("StrictHostKeyChecking", "no");
+        session.setConfig("compression.s2c", "zlib@openssh.com,zlib");
+        session.setConfig("compression.c2s", "zlib@openssh.com,zlib");
+        session.setConfig("compression_level", "9");
+        session.connect();
+        return session;
+    }
+
+    private void returnSession(Session session) {
+        if (session != null && session.isConnected() && sessionPool.size() < MAX_POOL_SIZE) {
+            sessionPool.offer(session);
+        } else {
+            if (session != null) session.disconnect();
+        }
     }
 }
