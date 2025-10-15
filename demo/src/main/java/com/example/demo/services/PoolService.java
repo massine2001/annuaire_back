@@ -1,6 +1,7 @@
 package com.example.demo.services;
 
 import com.example.demo.models.Pool;
+import com.example.demo.models.Access;
 import com.example.demo.repositories.PoolRepository;
 import com.example.demo.repositories.AccessRepository;
 import com.example.demo.repositories.FileRepository;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class PoolService {
@@ -50,7 +52,14 @@ public class PoolService {
         modifiedPool.setDescription(pool.getDescription());
         return poolRepository.save(modifiedPool);
     }
+
     public List<Pool> getAllPoolsByUserId(int userId) {
-        return poolRepository.findByCreatedBy(userId);
+        List<Access> accesses = accessRepository.findByUserId(userId);
+
+        List<Pool> pools = accesses.stream()
+                .map(Access::getPool)
+                .collect(Collectors.toList());
+
+        return pools;
     }
 }

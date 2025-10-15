@@ -11,9 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
@@ -22,7 +19,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Service
 public class FileService {
-    private static final Logger logger = LoggerFactory.getLogger(FileService.class);
 
     private final SftpConfig sftpConfig;
     private final FileRepository fileRepository;
@@ -80,9 +76,8 @@ public class FileService {
                 sftpConfig.getPort()
         );
         session.setConfig("StrictHostKeyChecking", "no");
-        session.setConfig("compression.s2c", "zlib@openssh.com,zlib");
-        session.setConfig("compression.c2s", "zlib@openssh.com,zlib");
-        session.setConfig("compression_level", "9");
+        session.setConfig("compression.s2c", "none");
+        session.setConfig("compression.c2s", "none");
         session.connect();
         return session;
     }
@@ -146,26 +141,21 @@ public class FileService {
         try (InputStream in = data) {
             long sessionStart = System.currentTimeMillis();
             session = getSession();
-            logger.info("SFTP session retrieval took {} ms", System.currentTimeMillis() - sessionStart);
 
             long sftpStart = System.currentTimeMillis();
             sftp = openSftp(session);
-            logger.info("SFTP channel open took {} ms", System.currentTimeMillis() - sftpStart);
 
             long dirStart = System.currentTimeMillis();
             ensureDirectory(sftp, remoteDir);
-            logger.info("Ensure directory took {} ms", System.currentTimeMillis() - dirStart);
 
             sftp.cd(remoteDir);
 
             long putStart = System.currentTimeMillis();
             sftp.put(in, filename);
-            logger.info("SFTP put took {} ms", System.currentTimeMillis() - putStart);
         } finally {
             if (sftp != null) sftp.disconnect();
             returnSession(session);
         }
-        logger.info("Total uploadToDir took {} ms", System.currentTimeMillis() - startTime);
     }
 
     public void deleteRemote(String remotePath) throws Exception {
@@ -242,6 +232,8 @@ public class FileService {
                 sftpConfig.getPort()
         );
         session.setConfig("StrictHostKeyChecking", "no");
+        session.setConfig("compression.s2c", "none");
+        session.setConfig("compression.c2s", "none");
         session.connect();
         return session;
     }

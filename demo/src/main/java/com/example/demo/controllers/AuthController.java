@@ -9,6 +9,8 @@ import com.example.demo.services.JwtService;
 import com.example.demo.services.UserService;
 import com.example.demo.services.CookieService;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -24,6 +26,8 @@ public class AuthController {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final CookieService cookieService;
+
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
     public AuthController(
             UserService userService,
@@ -43,15 +47,34 @@ public class AuthController {
             @RequestBody LoginRequest request,
             HttpServletResponse response
     ) {
-        User user = userService.findByEmail(request.getEmail());
+        long startTime = System.currentTimeMillis();
+        logger.info("Login attempt for email: {}", request.getEmail());
 
-        if (user == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+        long dbStart = System.currentTimeMillis();
+        User user = userService.findByEmail(request.getEmail());
+        logger.info("DB query took {} ms", System.currentTimeMillis() - dbStart);
+
+        if (user == null) {
+            logger.warn("User not found for email: {}", request.getEmail());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
+        long passwordStart = System.currentTimeMillis();
+        boolean passwordMatches = passwordEncoder.matches(request.getPassword(), user.getPassword());
+        logger.info("Password check took {} ms", System.currentTimeMillis() - passwordStart);
+
+        if (!passwordMatches) {
+            logger.warn("Invalid password for email: {}", request.getEmail());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        long tokenStart = System.currentTimeMillis();
         String token = jwtService.generateToken(user.getId(), user.getEmail(), user.getRole());
+        logger.info("Token generation took {} ms", System.currentTimeMillis() - tokenStart);
 
         response.setHeader("Set-Cookie", cookieService.createAuthCookie(token));
+
+        logger.info("Login successful for {} in {} ms", user.getEmail(), System.currentTimeMillis() - startTime);
 
         return ResponseEntity.ok(new AuthResponse(user));
     }
@@ -62,6 +85,7 @@ public class AuthController {
             HttpServletResponse response
     ) {
         if (userService.existsByEmail(request.getEmail())) {
+            logger.warn("Email already in use: {}", request.getEmail());
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
 
@@ -78,6 +102,8 @@ public class AuthController {
 
         response.setHeader("Set-Cookie", cookieService.createAuthCookie(token));
 
+        logger.info("User registered successfully: {}", user.getEmail());
+
         return ResponseEntity.ok(new AuthResponse(user));
     }
 
@@ -85,6 +111,12 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletResponse response) {
         response.setHeader("Set-Cookie", cookieService.deleteAuthCookie());
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null) {
+            String email = (String) authentication.getPrincipal();
+            logger.info("User logged out: {}", email);
+        }
 
         return ResponseEntity.noContent().build();
     }

@@ -7,7 +7,6 @@ import com.example.demo.models.File;
 import com.example.demo.models.Pool;
 import com.example.demo.models.User;
 import com.example.demo.repositories.AccessRepository;
-import com.example.demo.repositories.PoolRepository;
 import com.example.demo.repositories.UserRepository;
 import com.example.demo.services.AccessService;
 import com.example.demo.services.FileService;
@@ -17,17 +16,14 @@ import com.example.demo.services.JwtService;
 import com.example.demo.services.CookieService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.Key;
 import java.security.Principal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -46,6 +42,7 @@ public class PoolController {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final CookieService cookieService;
+
 
     public PoolController(
             PoolService poolService,
@@ -114,7 +111,7 @@ public class PoolController {
         if (currentUser == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        
+
         Pool pool = poolService.getPoolById(id);
 
         if(pool == null) {
@@ -162,7 +159,7 @@ public class PoolController {
         if (currentUser == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        
+
         Pool existingPool = poolService.getPoolById(id);
 
         if (existingPool == null) {
@@ -189,7 +186,7 @@ public class PoolController {
         if (currentUser == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        
+
         Pool pool = poolService.getPoolById(id);
 
         if (pool == null) {
@@ -396,7 +393,7 @@ public class PoolController {
         if (currentUser == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        
+
         Pool pool = poolService.getPoolById(poolId);
 
         if (pool == null) {
@@ -641,6 +638,5 @@ public class PoolController {
             ));
         }
     }
-
 
 }

@@ -28,8 +28,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/files")
 public class FileController {
     
-    private static final Logger logger = LoggerFactory.getLogger(FileController.class);
-    
+
     private final FileService fileService;
     private final PoolService poolService;
     private final UserService userService;
@@ -238,10 +237,8 @@ public class FileController {
             File updated = fileService.updateFileEntity(id, existingFile);
             return ResponseEntity.ok(updated);
         } catch (DateTimeParseException e) {
-            logger.error("Invalid date format for file {}: {}", id, e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         } catch (Exception e) {
-            logger.error("Error updating file {}: {}", id, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -276,7 +273,6 @@ public class FileController {
         try {
             fileService.deleteRemote(file.getPath());
         } catch (Exception e) {
-            logger.error("Error deleting remote file {}: {}", file.getPath(), e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY).build();
         }
 
@@ -289,9 +285,9 @@ public class FileController {
     public ResponseEntity<File> uploadFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam("poolId") int poolId,
+            @RequestParam(value = "name", required = false) String name,
             @RequestParam(value = "description", required = false) String description,
             @RequestParam(value = "expirationDate", required = false) String expirationDateStr) {
-
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             if (authentication == null || !authentication.isAuthenticated()) {
@@ -321,8 +317,17 @@ public class FileController {
             String safeName = fileService.sanitizeFilename(file.getOriginalFilename());
             fileService.uploadToDir(remoteDir, safeName, file.getInputStream());
 
+            String displayName = (name != null && !name.trim().isEmpty()) ? name : safeName;
+
+            if (name != null && !name.trim().isEmpty()) {
+                String originalExtension = getFileExtension(file.getOriginalFilename());
+                if (originalExtension != null && !displayName.toLowerCase().endsWith(originalExtension.toLowerCase())) {
+                    displayName = displayName + originalExtension;
+                }
+            }
+
             File savedFile = new File();
-            savedFile.setName(safeName);
+            savedFile.setName(displayName);
             savedFile.setPath(remoteDir + "/" + safeName);
             savedFile.setPool(pool);
             savedFile.setUserUploader(currentUser);
@@ -340,10 +345,8 @@ public class FileController {
             File persisted = fileService.saveFile(savedFile);
             return ResponseEntity.status(HttpStatus.CREATED).body(persisted);
         } catch (DateTimeParseException e) {
-            logger.error("Invalid date format: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         } catch (Exception e) {
-            logger.error("Error uploading file to pool {}: {}", poolId, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -382,7 +385,6 @@ public class FileController {
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
                     .body(rs);
         } catch (Exception e) {
-            logger.error("Error downloading file {}: {}", fileId, e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -439,9 +441,14 @@ public class FileController {
                     .contentType(contentType)
                     .body(rs);
         } catch (Exception e) {
-            logger.error("Error previewing file {}: {}", id, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    private String getFileExtension(String filename) {
+        if (filename == null) return null;
+        int lastDotIndex = filename.lastIndexOf('.');
+        return lastDotIndex > 0 ? filename.substring(lastDotIndex) : null;
     }
 }
 
