@@ -10,7 +10,8 @@ public class CookieService {
     @Value("${cookie.secure:false}")
     private boolean cookieSecure;
 
-
+    @Value("${cookie.domain:}")
+    private String cookieDomain;
 
 
     public String createAuthCookie(String token) {
@@ -29,7 +30,9 @@ public class CookieService {
         cookie.append("Path=/; ");
         cookie.append("Max-Age=").append(24 * 60 * 60); // 24 heures
 
-
+        if (cookieDomain != null && !cookieDomain.isEmpty()) {
+            cookie.append("; Domain=").append(cookieDomain);
+        }
 
         return cookie.toString();
     }
@@ -51,7 +54,9 @@ public class CookieService {
         cookie.append("Path=/; ");
         cookie.append("Max-Age=0");
 
-
+        if (cookieDomain != null && !cookieDomain.isEmpty()) {
+            cookie.append("; Domain=").append(cookieDomain);
+        }
 
         return cookie.toString();
     }
