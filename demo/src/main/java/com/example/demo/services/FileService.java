@@ -242,9 +242,6 @@ public class FileService {
                 sftpConfig.getPort()
         );
         session.setConfig("StrictHostKeyChecking", "no");
-        session.setConfig("compression.s2c", "zlib@openssh.com,zlib");
-        session.setConfig("compression.c2s", "zlib@openssh.com,zlib");
-        session.setConfig("compression_level", "9");
         session.connect();
         return session;
     }
