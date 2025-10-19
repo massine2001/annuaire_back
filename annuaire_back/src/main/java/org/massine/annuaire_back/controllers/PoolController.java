@@ -1,4 +1,4 @@
-﻿package org.massine.annuaire_back.controllers;
+package org.massine.annuaire_back.controllers;
 
 import org.massine.annuaire_back.dto.AcceptInvitationRequest;
 import org.massine.annuaire_back.dto.InvitationRequest;

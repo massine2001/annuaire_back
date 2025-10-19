@@ -1,4 +1,4 @@
-﻿package org.massine.annuaire_back.config;
+package org.massine.annuaire_back.config;
 
 import org.massine.annuaire_back.services.JwtService;
 import org.massine.annuaire_back.services.UserService;
@@ -91,4 +91,3 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 }
-

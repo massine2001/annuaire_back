@@ -1,4 +1,4 @@
-﻿package org.massine.annuaire_back.repositories;
+package org.massine.annuaire_back.repositories;
 
 import org.massine.annuaire_back.models.Access;
 import org.massine.annuaire_back.models.Pool;

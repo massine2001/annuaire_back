@@ -1,4 +1,4 @@
-﻿package org.massine.annuaire_back.controllers;
+package org.massine.annuaire_back.controllers;
 
 import org.massine.annuaire_back.models.Access;
 import org.massine.annuaire_back.models.User;

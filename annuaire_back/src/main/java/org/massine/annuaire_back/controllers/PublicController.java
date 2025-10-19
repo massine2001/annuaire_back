@@ -1,4 +1,4 @@
-﻿package org.massine.annuaire_back.controllers;
+package org.massine.annuaire_back.controllers;
 
 import org.massine.annuaire_back.models.File;
 import org.massine.annuaire_back.models.Pool;

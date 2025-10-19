@@ -1,4 +1,4 @@
-﻿package org.massine.annuaire_back.controllers;
+package org.massine.annuaire_back.controllers;
 
 import org.massine.annuaire_back.config.SftpConfig;
 import org.massine.annuaire_back.exceptions.ErrorResponse;

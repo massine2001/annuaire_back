@@ -1,4 +1,4 @@
-﻿package org.massine.annuaire_back.dto;
+package org.massine.annuaire_back.dto;
 
 import org.massine.annuaire_back.models.User;
 
