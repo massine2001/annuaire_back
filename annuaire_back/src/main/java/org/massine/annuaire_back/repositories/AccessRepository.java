@@ -1,8 +1,8 @@
-package org.massine.annuaire_back.repositories;
+﻿package org.massine.annuaire_back.repositories;
 
-import com.example.demo.models.Access;
-import com.example.demo.models.Pool;
-import com.example.demo.models.User;
+import org.massine.annuaire_back.models.Access;
+import org.massine.annuaire_back.models.Pool;
+import org.massine.annuaire_back.models.User;
 import jakarta.annotation.Nonnull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -37,3 +37,4 @@ public interface AccessRepository extends JpaRepository<Access, Integer> {
 
     List<Access> findByPoolId(int poolId);
 }
+

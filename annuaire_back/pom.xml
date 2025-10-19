@@ -8,10 +8,10 @@
 		<version>3.4.1</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.example</groupId>
-	<artifactId>demo</artifactId>
+	<groupId>org.massine</groupId>
+	<artifactId>annuaire-back</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>demo</name>
+	<name>annuaire-back</name>
 	<description>Annuaire project with Spring Boot</description>
 	<url/>
 	<licenses>

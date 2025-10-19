@@ -1,14 +1,14 @@
-package org.massine.annuaire_back.controllers;
+﻿package org.massine.annuaire_back.controllers;
 
-import com.example.demo.config.SftpConfig;
-import com.example.demo.exceptions.ErrorResponse;
-import com.example.demo.models.File;
-import com.example.demo.models.Pool;
-import com.example.demo.models.User;
-import com.example.demo.services.AccessService;
-import com.example.demo.services.FileService;
-import com.example.demo.services.PoolService;
-import com.example.demo.services.UserService;
+import org.massine.annuaire_back.config.SftpConfig;
+import org.massine.annuaire_back.exceptions.ErrorResponse;
+import org.massine.annuaire_back.models.File;
+import org.massine.annuaire_back.models.Pool;
+import org.massine.annuaire_back.models.User;
+import org.massine.annuaire_back.services.AccessService;
+import org.massine.annuaire_back.services.FileService;
+import org.massine.annuaire_back.services.PoolService;
+import org.massine.annuaire_back.services.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
@@ -451,4 +451,5 @@ public class FileController {
         return lastDotIndex > 0 ? filename.substring(lastDotIndex) : null;
     }
 }
+
 

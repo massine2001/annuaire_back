@@ -1,10 +1,10 @@
 package org.massine.annuaire_back.services;
 
-import com.example.demo.models.Pool;
-import com.example.demo.models.Access;
-import com.example.demo.repositories.PoolRepository;
-import com.example.demo.repositories.AccessRepository;
-import com.example.demo.repositories.FileRepository;
+import org.massine.annuaire_back.models.Pool;
+import org.massine.annuaire_back.models.Access;
+import org.massine.annuaire_back.repositories.PoolRepository;
+import org.massine.annuaire_back.repositories.AccessRepository;
+import org.massine.annuaire_back.repositories.FileRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

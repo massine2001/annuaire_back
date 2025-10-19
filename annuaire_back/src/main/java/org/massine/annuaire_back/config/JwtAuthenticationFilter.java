@@ -1,8 +1,8 @@
-package org.massine.annuaire_back.config;
+﻿package org.massine.annuaire_back.config;
 
-import com.example.demo.services.JwtService;
-import com.example.demo.services.UserService;
-import com.example.demo.models.User;
+import org.massine.annuaire_back.services.JwtService;
+import org.massine.annuaire_back.services.UserService;
+import org.massine.annuaire_back.models.User;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -91,3 +91,4 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 }
+

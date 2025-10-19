@@ -1,10 +1,10 @@
 package org.massine.annuaire_back.services;
 
-import com.example.demo.models.Access;
-import com.example.demo.models.File;
-import com.example.demo.models.Pool;
-import com.example.demo.models.User;
-import com.example.demo.repositories.AccessRepository;
+import org.massine.annuaire_back.models.Access;
+import org.massine.annuaire_back.models.File;
+import org.massine.annuaire_back.models.Pool;
+import org.massine.annuaire_back.models.User;
+import org.massine.annuaire_back.repositories.AccessRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

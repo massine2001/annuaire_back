@@ -1,6 +1,6 @@
 package org.massine.annuaire_back.repositories;
 
-import com.example.demo.models.User;
+import org.massine.annuaire_back.models.User;
 import jakarta.annotation.Nonnull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

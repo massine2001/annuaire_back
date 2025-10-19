@@ -1,19 +1,19 @@
-package org.massine.annuaire_back.controllers;
+﻿package org.massine.annuaire_back.controllers;
 
-import com.example.demo.dto.AcceptInvitationRequest;
-import com.example.demo.dto.InvitationRequest;
-import com.example.demo.models.Access;
-import com.example.demo.models.File;
-import com.example.demo.models.Pool;
-import com.example.demo.models.User;
-import com.example.demo.repositories.AccessRepository;
-import com.example.demo.repositories.UserRepository;
-import com.example.demo.services.AccessService;
-import com.example.demo.services.FileService;
-import com.example.demo.services.PoolService;
-import com.example.demo.services.UserService;
-import com.example.demo.services.JwtService;
-import com.example.demo.services.CookieService;
+import org.massine.annuaire_back.dto.AcceptInvitationRequest;
+import org.massine.annuaire_back.dto.InvitationRequest;
+import org.massine.annuaire_back.models.Access;
+import org.massine.annuaire_back.models.File;
+import org.massine.annuaire_back.models.Pool;
+import org.massine.annuaire_back.models.User;
+import org.massine.annuaire_back.repositories.AccessRepository;
+import org.massine.annuaire_back.repositories.UserRepository;
+import org.massine.annuaire_back.services.AccessService;
+import org.massine.annuaire_back.services.FileService;
+import org.massine.annuaire_back.services.PoolService;
+import org.massine.annuaire_back.services.UserService;
+import org.massine.annuaire_back.services.JwtService;
+import org.massine.annuaire_back.services.CookieService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import org.springframework.http.HttpHeaders;
@@ -67,7 +67,7 @@ public class PoolController {
     }
 
     /**
-     * Récupère l'utilisateur actuellement connecté depuis le contexte de sécurité.
+     * RÃ©cupÃ¨re l'utilisateur actuellement connectÃ© depuis le contexte de sÃ©curitÃ©.
      * Le principal contient l'email de l'utilisateur (String), pas l'objet User complet.
      */
     private User getCurrentUser() {
@@ -276,13 +276,13 @@ public class PoolController {
         stats.put("members", members);
         stats.put("accesses", accesses);
 
-        // Répartition par rôle dans la pool
+        // RÃ©partition par rÃ´le dans la pool
         Map<String, Long> roleDistribution = accesses.stream()
                 .filter(access -> access.getRole() != null)
                 .collect(Collectors.groupingBy(Access::getRole, Collectors.counting()));
         stats.put("roleDistribution", roleDistribution);
 
-        // Répartition par rôle global des users
+        // RÃ©partition par rÃ´le global des users
         Map<String, Long> userRoleDistribution = members.stream()
                 .filter(user -> user.getRole() != null)
                 .collect(Collectors.groupingBy(User::getRole, Collectors.counting()));
@@ -313,17 +313,17 @@ public class PoolController {
                 ));
         stats.put("filesPerDay", filesPerDay);
 
-        // Dernier fichier uploadé
+        // Dernier fichier uploadÃ©
         Optional<File> lastFile = files.stream()
                 .filter(file -> file.getCreatedAt() != null)
                 .max(Comparator.comparing(File::getCreatedAt));
         stats.put("lastFile", lastFile.orElse(null));
 
-        // ==================== STATS ACTIVITÉ ====================
+        // ==================== STATS ACTIVITÃ‰ ====================
         // Membres les plus actifs (par nombre de fichiers)
         stats.put("mostActiveMembers", topUploaders);
 
-        // Membres inactifs (0 fichiers uploadés)
+        // Membres inactifs (0 fichiers uploadÃ©s)
         List<User> inactiveMembers = members.stream()
                 .filter(user -> files.stream().noneMatch(f -> f.getUserUploader() != null && f.getUserUploader().getId().equals(user.getId())))
                 .collect(Collectors.toList());
@@ -331,10 +331,10 @@ public class PoolController {
         stats.put("inactiveMembersCount", inactiveMembers.size());
 
         // ==================== STATS TEMPORELLES ====================
-        // Date de création de la pool
+        // Date de crÃ©ation de la pool
         stats.put("poolCreatedAt", pool.getCreatedAt());
 
-        // Âge de la pool en jours
+        // Ã‚ge de la pool en jours
         long poolAgeInDays = 0;
         if (pool.getCreatedAt() != null) {
             poolAgeInDays = ChronoUnit.DAYS.between(
@@ -344,7 +344,7 @@ public class PoolController {
         }
         stats.put("poolAgeInDays", poolAgeInDays);
 
-        // Nouveau membre le plus récent
+        // Nouveau membre le plus rÃ©cent
         Optional<User> newestMember = members.stream()
                 .filter(user -> user.getCreatedAt() != null)
                 .max(Comparator.comparing(User::getCreatedAt));
@@ -356,7 +356,7 @@ public class PoolController {
                 .min(Comparator.comparing(User::getCreatedAt));
         stats.put("oldestMember", oldestMember.orElse(null));
 
-        // ==================== STATS AVANCÉES ====================
+        // ==================== STATS AVANCÃ‰ES ====================
         // Moyenne de fichiers par membre
         double avgFilesPerMember = members.isEmpty() ? 0 : (double) files.size() / members.size();
         stats.put("avgFilesPerMember", Math.round(avgFilesPerMember * 100.0) / 100.0);
@@ -445,7 +445,7 @@ public class PoolController {
         if (existingUserOpt.isPresent()) {
             Optional<Access> existingAccessOpt = accessRepository.findByUserIdAndPoolId(existingUserOpt.get().getId(), request.getPoolId().intValue());
             if (existingAccessOpt.isPresent()) {
-                return ResponseEntity.badRequest().body("Cet utilisateur est déjà membre du pool");
+                return ResponseEntity.badRequest().body("Cet utilisateur est dÃ©jÃ  membre du pool");
             }
         }
 
@@ -490,7 +490,7 @@ public class PoolController {
                 if (existingAccessOpt.isPresent()) {
                     return ResponseEntity.badRequest().body(Map.of(
                             "valid", false,
-                            "message", "Vous êtes déjà membre de ce pool. Connectez-vous."
+                            "message", "Vous Ãªtes dÃ©jÃ  membre de ce pool. Connectez-vous."
                     ));
                 }
             }
@@ -506,7 +506,7 @@ public class PoolController {
         } catch (ExpiredJwtException e) {
             return ResponseEntity.status(410).body(Map.of(
                     "valid", false,
-                    "message", "Ce lien d'invitation a expiré"
+                    "message", "Ce lien d'invitation a expirÃ©"
             ));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of(
@@ -537,7 +537,7 @@ public class PoolController {
             if (!email.equalsIgnoreCase(request.getEmail())) {
                 return ResponseEntity.badRequest().body(Map.of(
                         "success", false,
-                        "message", "L'email ne correspond pas à l'invitation"
+                        "message", "L'email ne correspond pas Ã  l'invitation"
                 ));
             }
 
@@ -551,7 +551,7 @@ public class PoolController {
                 if (existingAccessOpt.isPresent()) {
                     return ResponseEntity.badRequest().body(Map.of(
                             "success", false,
-                            "message", "Vous êtes déjà membre de ce pool. Connectez-vous pour y accéder."
+                            "message", "Vous Ãªtes dÃ©jÃ  membre de ce pool. Connectez-vous pour y accÃ©der."
                     ));
                 }
 
@@ -576,7 +576,7 @@ public class PoolController {
                         .header(HttpHeaders.SET_COOKIE, cookie)
                         .body(Map.of(
                                 "success", true,
-                                "message", "Vous avez rejoint le pool avec succès !",
+                                "message", "Vous avez rejoint le pool avec succÃ¨s !",
                                 "user", Map.of(
                                         "id", user.getId(),
                                         "email", user.getEmail(),
@@ -616,7 +616,7 @@ public class PoolController {
                         .header(HttpHeaders.SET_COOKIE, cookie)
                         .body(Map.of(
                                 "success", true,
-                                "message", "Compte créé et ajouté au pool avec succès !",
+                                "message", "Compte crÃ©Ã© et ajoutÃ© au pool avec succÃ¨s !",
                                 "user", Map.of(
                                         "id", newUser.getId(),
                                         "email", newUser.getEmail(),
@@ -629,7 +629,7 @@ public class PoolController {
         } catch (ExpiredJwtException e) {
             return ResponseEntity.status(410).body(Map.of(
                     "success", false,
-                    "message", "Ce lien d'invitation a expiré"
+                    "message", "Ce lien d'invitation a expirÃ©"
             ));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of(

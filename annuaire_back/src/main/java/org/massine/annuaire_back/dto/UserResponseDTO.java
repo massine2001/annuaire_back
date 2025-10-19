@@ -1,6 +1,6 @@
-package org.massine.annuaire_back.dto;
+﻿package org.massine.annuaire_back.dto;
 
-import com.example.demo.models.User;
+import org.massine.annuaire_back.models.User;
 
 import java.time.Instant;
 
@@ -75,3 +75,4 @@ public class UserResponseDTO {
         this.createdAt = createdAt;
     }
 }
+

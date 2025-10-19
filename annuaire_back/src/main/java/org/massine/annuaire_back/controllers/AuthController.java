@@ -1,13 +1,13 @@
-package org.massine.annuaire_back.controllers;
+﻿package org.massine.annuaire_back.controllers;
 
-import com.example.demo.dto.AuthResponse;
-import com.example.demo.dto.LoginRequest;
-import com.example.demo.dto.RegisterRequest;
-import com.example.demo.dto.UserResponseDTO;
-import com.example.demo.models.User;
-import com.example.demo.services.JwtService;
-import com.example.demo.services.UserService;
-import com.example.demo.services.CookieService;
+import org.massine.annuaire_back.dto.AuthResponse;
+import org.massine.annuaire_back.dto.LoginRequest;
+import org.massine.annuaire_back.dto.RegisterRequest;
+import org.massine.annuaire_back.dto.UserResponseDTO;
+import org.massine.annuaire_back.models.User;
+import org.massine.annuaire_back.services.JwtService;
+import org.massine.annuaire_back.services.UserService;
+import org.massine.annuaire_back.services.CookieService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

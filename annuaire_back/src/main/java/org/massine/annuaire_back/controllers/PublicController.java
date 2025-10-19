@@ -1,9 +1,9 @@
-package org.massine.annuaire_back.controllers;
+﻿package org.massine.annuaire_back.controllers;
 
-import com.example.demo.models.File;
-import com.example.demo.models.Pool;
-import com.example.demo.services.FileService;
-import com.example.demo.services.PoolService;
+import org.massine.annuaire_back.models.File;
+import org.massine.annuaire_back.models.Pool;
+import org.massine.annuaire_back.services.FileService;
+import org.massine.annuaire_back.services.PoolService;
 import org.springframework.core.io.Resource;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
@@ -26,7 +26,7 @@ public class PublicController {
     }
 
     /**
-     * Récupérer la liste des pools publics (pour les visiteurs non connectés)
+     * RÃ©cupÃ©rer la liste des pools publics (pour les visiteurs non connectÃ©s)
      */
     @GetMapping("/pools/public")
     public ResponseEntity<List<Map<String, Object>>> getPublicPools() {
@@ -52,7 +52,7 @@ public class PublicController {
     }
 
     /**
-     * Récupérer les détails d'un pool public spécifique
+     * RÃ©cupÃ©rer les dÃ©tails d'un pool public spÃ©cifique
      */
     @GetMapping("/pools/{poolId}/public")
     public ResponseEntity<?> getPublicPoolDetails(@PathVariable int poolId) {
@@ -60,7 +60,7 @@ public class PublicController {
 
         if (pool == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Pool non trouvé"));
+                    .body(Map.of("error", "Pool non trouvÃ©"));
         }
 
         if (pool.getPublicAccess() == null || !pool.getPublicAccess()) {
@@ -80,7 +80,7 @@ public class PublicController {
     }
 
     /**
-     * Récupérer les fichiers d'un pool public
+     * RÃ©cupÃ©rer les fichiers d'un pool public
      */
     @GetMapping("/files/pool/{poolId}/public")
     public ResponseEntity<?> getPublicPoolFiles(@PathVariable int poolId) {
@@ -88,7 +88,7 @@ public class PublicController {
 
         if (pool == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Pool non trouvé"));
+                    .body(Map.of("error", "Pool non trouvÃ©"));
         }
 
         if (pool.getPublicAccess() == null || !pool.getPublicAccess()) {
@@ -122,7 +122,7 @@ public class PublicController {
     }
 
     /**
-     * Télécharger un fichier d'un pool public
+     * TÃ©lÃ©charger un fichier d'un pool public
      */
     @GetMapping("/files/download/{fileId}/public")
     public ResponseEntity<Resource> downloadPublicFile(@PathVariable int fileId) {
@@ -159,7 +159,7 @@ public class PublicController {
     }
 
     /**
-     * Prévisualiser un fichier d'un pool public
+     * PrÃ©visualiser un fichier d'un pool public
      */
     @GetMapping("/files/preview/{fileId}/public")
     public ResponseEntity<Resource> previewPublicFile(@PathVariable int fileId) {

@@ -1,10 +1,10 @@
-package org.massine.annuaire_back.demo.services;
+package org.massine.annuaire_back.services;
 
-import com.example.demo.config.SftpConfig;
-import com.example.demo.models.File;
-import com.example.demo.models.Pool;
-import com.example.demo.models.User;
-import com.example.demo.repositories.FileRepository;
+import org.massine.annuaire_back.config.SftpConfig;
+import org.massine.annuaire_back.models.File;
+import org.massine.annuaire_back.models.Pool;
+import org.massine.annuaire_back.models.User;
+import org.massine.annuaire_back.repositories.FileRepository;
 import com.jcraft.jsch.*;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.stereotype.Service;

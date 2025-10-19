@@ -1,9 +1,9 @@
-package org.massine.annuaire_back.controllers;
+﻿package org.massine.annuaire_back.controllers;
 
-import com.example.demo.models.Access;
-import com.example.demo.models.User;
-import com.example.demo.services.AccessService;
-import com.example.demo.services.UserService;
+import org.massine.annuaire_back.models.Access;
+import org.massine.annuaire_back.models.User;
+import org.massine.annuaire_back.services.AccessService;
+import org.massine.annuaire_back.services.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -194,3 +194,4 @@ public class AccessController {
         return ResponseEntity.noContent().build();
     }
 }
+

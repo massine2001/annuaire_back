@@ -1,7 +1,7 @@
 package org.massine.annuaire_back.services;
 
-import com.example.demo.models.User;
-import com.example.demo.repositories.UserRepository;
+import org.massine.annuaire_back.models.User;
+import org.massine.annuaire_back.repositories.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
