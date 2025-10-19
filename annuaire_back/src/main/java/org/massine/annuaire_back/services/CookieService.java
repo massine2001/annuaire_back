@@ -1,4 +1,4 @@
-package com.example.demo.services;
+package org.massine.annuaire_back.services;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;

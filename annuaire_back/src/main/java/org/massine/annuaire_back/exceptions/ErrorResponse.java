@@ -1,4 +1,4 @@
-package com.example.demo.exceptions;
+package org.massine.annuaire_back.exceptions;
 
 import java.time.Instant;
 

@@ -1,4 +1,4 @@
-package com.example.demo.services;
+package org.massine.annuaire_back.demo.services;
 
 import com.example.demo.config.SftpConfig;
 import com.example.demo.models.File;

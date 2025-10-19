@@ -1,4 +1,4 @@
-package com.example.demo.dto;
+package org.massine.annuaire_back.dto;
 
 public class InvitationRequest {
     private String email;

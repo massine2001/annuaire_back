@@ -3,16 +3,16 @@ FROM eclipse-temurin:21-jdk-alpine AS build
 
 WORKDIR /app
 
-# Copier les fichiers Maven wrapper depuis demo/
-COPY demo/.mvn/ .mvn
-COPY demo/mvnw demo/pom.xml ./
+# Copier les fichiers Maven wrapper depuis annuaire_back/
+COPY annuaire_back/.mvn/ .mvn
+COPY annuaire_back/mvnw annuaire_back/pom.xml ./
 
 RUN chmod +x mvnw
 
 RUN ./mvnw dependency:go-offline
 
-# Copier le code source depuis demo/
-COPY demo/src ./src
+# Copier le code source depuis annuaire_back/
+COPY annuaire_back/src ./src
 
 RUN ./mvnw clean package -DskipTests
 
@@ -29,7 +29,7 @@ RUN addgroup -S spring && adduser -S spring -G spring
 
 # Copier le JAR et le script d'entrypoint
 COPY --from=build /app/target/*.jar app.jar
-COPY demo/docker-entrypoint.sh /app/docker-entrypoint.sh
+COPY annuaire_back/docker-entrypoint.sh /app/docker-entrypoint.sh
 
 # Rendre le script exécutable et changer les permissions
 RUN chmod +x /app/docker-entrypoint.sh && \

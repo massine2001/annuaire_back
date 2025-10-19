@@ -1,4 +1,4 @@
-package com.example.demo.services;
+package org.massine.annuaire_back.services;
 
 import com.example.demo.models.Access;
 import com.example.demo.models.File;

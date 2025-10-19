@@ -1,4 +1,4 @@
-package com.example.demo.config;
+package org.massine.annuaire_back.config;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;

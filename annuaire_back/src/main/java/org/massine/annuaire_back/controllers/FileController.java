@@ -1,4 +1,4 @@
-package com.example.demo.controllers;
+package org.massine.annuaire_back.controllers;
 
 import com.example.demo.config.SftpConfig;
 import com.example.demo.exceptions.ErrorResponse;

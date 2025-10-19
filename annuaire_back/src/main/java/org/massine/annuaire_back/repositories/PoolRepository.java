@@ -1,4 +1,4 @@
-package com.example.demo.repositories;
+package org.massine.annuaire_back.repositories;
 
 import com.example.demo.models.Pool;
 import jakarta.annotation.Nonnull;

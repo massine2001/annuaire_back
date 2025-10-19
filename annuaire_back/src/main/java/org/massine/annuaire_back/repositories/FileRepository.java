@@ -1,4 +1,4 @@
-package com.example.demo.repositories;
+package org.massine.annuaire_back.repositories;
 
 import com.example.demo.models.File;
 import com.example.demo.models.Pool;

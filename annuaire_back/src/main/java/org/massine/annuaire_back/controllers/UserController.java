@@ -1,4 +1,4 @@
-package com.example.demo.controllers;
+package org.massine.annuaire_back.controllers;
 
 import com.example.demo.models.Pool;
 import com.example.demo.models.User;

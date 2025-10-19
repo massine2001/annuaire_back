@@ -1,4 +1,4 @@
-package com.example.demo.models;
+package org.massine.annuaire_back.models;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;

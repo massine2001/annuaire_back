@@ -1,4 +1,4 @@
-package com.example.demo.dto;
+package org.massine.annuaire_back.dto;
 
 import com.example.demo.models.User;
 

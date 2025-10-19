@@ -1,4 +1,4 @@
-package com.example.demo.services;
+package org.massine.annuaire_back.services;
 
 import com.example.demo.models.User;
 import com.example.demo.repositories.UserRepository;
