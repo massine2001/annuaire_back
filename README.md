@@ -1,5 +1,13 @@
 # Annuaire Backend
 
+## 🕘 Version antérieure de docsManager
+
+Ce projet constitue la **première version du back-end de docsManager**, développée avant la mise en place de l’architecture complète **OAuth2 / OpenID Connect**.  
+L’authentification y reposait sur des **JWT signés localement**, émis et vérifiés directement par l’application sans serveur d’autorisation externe.  
+Cette approche permettait déjà une gestion des utilisateurs et des rôles, mais sans la séparation stricte entre **front**, **BFF** et **Authorization Server** introduite dans la version actuelle.  
+
+La version actuelle de docsManager (voir [massine2001/docsManager](https://github.com/massine2001/docsManager)) a remplacé ce système par un modèle **distribué** fondé sur **OIDC**, **refresh tokens**.
+
 Application Spring Boot pour la gestion de pools de fichiers avec authentification JWT et stockage SFTP.
 
 ## 🚀 Fonctionnalités
